@@ -1,0 +1,3 @@
+Opratorer:
+  *  (Gange)    med ints
+  /  (Division) med int
