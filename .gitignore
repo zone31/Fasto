@@ -2,3 +2,8 @@ fasto/bin/*
 
 *.ui
 *.uo
+Parser.sig
+Parser.sml
+Parser.output
+Lexer.sml
+
