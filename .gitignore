@@ -1,3 +1,4 @@
-fasto/bin
+fasto/bin/*
+
 *.ui
 *.uo
