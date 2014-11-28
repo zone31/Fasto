@@ -233,6 +233,20 @@ structure CodeGen = struct
             val code2 = compileExp e2 vtable t2
         in  code1 @ code2 @ [Mips.SUB (place,t1,t2)]
         end
+    | Times (e1, e2, pos) =>
+        let val t1 = newName "minus_L"
+            val t2 = newName "minus_R"
+            val code1 = compileExp e1 vtable t1
+            val code2 = compileExp e2 vtable t2
+        in  code1 @ code2 @ [Mips.MUL (place,t1,t2)]
+        end
+    | Divide (e1, e2, pos) =>
+        let val t1 = newName "minus_L"
+            val t2 = newName "minus_R"
+            val code1 = compileExp e1 vtable t1
+            val code2 = compileExp e2 vtable t2
+        in  code1 @ code2 @ [Mips.DIV (place,t1,t2)]
+        end
     | Let (dec, e1, (line, col)) =>
         let val (code1, vtable1) = compileDec dec vtable
             val code2 = compileExp e1 vtable1 place
