@@ -98,6 +98,10 @@ Exp :     NUM            { Constant (IntVal (#1 $1), #2 $1) }
                         { Reduce ($3, $5, $7, (), $1) }
         | MAP LPAR FunArg COMMA Exp RPAR
                         { Map ($3, $5, (), (), $1) }
+        
+        | FILTER LPAR FunArg COMMA Exp RPAR
+                        { Filter ($3, $5, (), $1) }
+
         | REDUCE LPAR OP BinOp COMMA Exp COMMA Exp RPAR
                         { Reduce ($4, $6, $8, (), $1) }
         | LPAR Exp RPAR { $2 }
