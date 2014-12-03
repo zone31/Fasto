@@ -219,7 +219,7 @@ and checkExp ftab vtab (exp : In.Exp)
                               ^ ppType f_arg_type , pos)
          end
 
-    | In.Filter (f, arr_exp, _, _, pos)
+    | In.Filter (f, arr_exp, _, pos)
       => let val (arr_type, arr_exp_dec) = checkExp ftab vtab arr_exp
              val elem_type =
                case arr_type of
@@ -231,9 +231,9 @@ and checkExp ftab vtab (exp : In.Exp)
                  | (_,  res, args) =>
                    raise Error ("Filter: incompatible function type of "
                                 ^ In.ppFunArg 0 f ^ ":" ^ showFunType (args, res), pos)
-         in if elem_type = f_arg_type and f_res_type = Bool
+         in if elem_type = f_arg_type andalso f_res_type = Bool
             then (Array f_res_type,
-                  Out.Filter (f', arr_exp_dec, elem_type, f_res_type, pos))
+                  Out.Filter (f', arr_exp_dec, elem_type, pos))
             else raise Error ("Filter: array element types does not match."
                               ^ ppType elem_type ^ " instead of "
                               ^ ppType f_arg_type , pos)
@@ -289,12 +289,13 @@ and checkExp ftab vtab (exp : In.Exp)
              fun err (s, t) =
                  Error ("Scan: unexpected " ^ s ^ " type " ^ ppType t ^
                         ", expected " ^ ppType f_arg_type, pos)
-         in if elem_type = f_arg_type = n_type
+         in if elem_type = f_arg_type
+            then if elem_type = n_type
                  then (elem_type,
                        Out.Scan (f', n_dec, arr_dec, elem_type, pos))
                  else raise (err ("neutral element", n_type))
             else raise err ("array element", elem_type)
-         end
+         end 
 
      | In.Replicate (n_exp, exp, t, pos)
       => let val (n_type, n_dec) = checkExp ftab vtab n_exp
