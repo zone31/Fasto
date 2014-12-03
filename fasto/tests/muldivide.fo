@@ -1,0 +1,8 @@
+fun int main() =
+    let q = 3*5 in
+    let w = 4/2 in
+    let r = 5/2 in
+    let g = write(q) in
+    let g = write(w) in
+    let g = write(r) in
+    0
