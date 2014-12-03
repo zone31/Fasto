@@ -219,6 +219,26 @@ and checkExp ftab vtab (exp : In.Exp)
                               ^ ppType f_arg_type , pos)
          end
 
+    | In.Filter (f, arr_exp, _, _, pos)
+      => let val (arr_type, arr_exp_dec) = checkExp ftab vtab arr_exp
+             val elem_type =
+               case arr_type of
+                   Array t => t
+                 | other   => raise Error ("Filter: Argument not an array", pos)
+             val (f', f_res_type, f_arg_type) =
+               case checkFunArg (f, vtab, ftab, pos) of
+                   (f', res, [a1]) => (f', res, a1)
+                 | (_,  res, args) =>
+                   raise Error ("Filter: incompatible function type of "
+                                ^ In.ppFunArg 0 f ^ ":" ^ showFunType (args, res), pos)
+         in if elem_type = f_arg_type and f_res_type = Bool
+            then (Array f_res_type,
+                  Out.Filter (f', arr_exp_dec, elem_type, f_res_type, pos))
+            else raise Error ("Filter: array element types does not match."
+                              ^ ppType elem_type ^ " instead of "
+                              ^ ppType f_arg_type , pos)
+         end
+
     | In.Reduce (f, n_exp, arr_exp, _, pos)
       => let val (n_type, n_dec) = checkExp ftab vtab n_exp
              val (arr_type, arr_dec) = checkExp ftab vtab arr_exp
@@ -244,6 +264,34 @@ and checkExp ftab vtab (exp : In.Exp)
             then if elem_type = n_type
                  then (elem_type,
                        Out.Reduce (f', n_dec, arr_dec, elem_type, pos))
+                 else raise (err ("neutral element", n_type))
+            else raise err ("array element", elem_type)
+         end
+
+    | In.Scan (f, n_exp, arr_exp, _, pos)
+      => let val (n_type, n_dec) = checkExp ftab vtab n_exp
+             val (arr_type, arr_dec) = checkExp ftab vtab arr_exp
+             val elem_type =
+               case arr_type of
+                   Array t => t
+                 | other => raise Error ("Scan: Argument not an array", pos)
+             val (f', f_arg_type) =
+               case checkFunArg (f, vtab, ftab, pos) of
+                   (f', res, [a1, a2]) =>
+                   if a1 = a2 andalso a2 = res
+                   then (f', res)
+                   else raise Error
+                          ("Scan: incompatible function type of "
+                           ^ In.ppFunArg 0 f ^": " ^ showFunType ([a1, a2], res), pos)
+                 | (_, res, args) =>
+                   raise Error ("Scan: incompatible function type of "
+                                ^ In.ppFunArg 0 f ^ ": " ^ showFunType (args, res), pos)
+             fun err (s, t) =
+                 Error ("Scan: unexpected " ^ s ^ " type " ^ ppType t ^
+                        ", expected " ^ ppType f_arg_type, pos)
+         in if elem_type = f_arg_type = n_type
+                 then (elem_type,
+                       Out.Scan (f', n_dec, arr_dec, elem_type, pos))
                  else raise (err ("neutral element", n_type))
             else raise err ("array element", elem_type)
          end
