@@ -137,6 +137,14 @@ and checkExp ftab vtab (exp : In.Exp)
                        Out.Less (e1', e2', pos))
          end
 
+    | In.And (e1, e2, pos)
+      => let val (t, e1_dec, e2_dec) = checkBinOp ftab vtab (pos, Bool, e1, e2)
+         in (Bool, Out.And (e1_dec, e2_dec, pos)) end
+
+    | In.Or (e1, e2, pos)
+      => let val (t, e1_dec, e2_dec) = checkBinOp ftab vtab (pos, Bool, e1, e2)
+         in (Bool, Out.Or (e1_dec, e2_dec, pos)) end
+
     | In.If (pred, e1, e2, pos)
       => let val (pred_t, pred') = checkExp ftab vtab pred
              val (t1, e1') = checkExp ftab vtab e1
@@ -295,7 +303,7 @@ and checkExp ftab vtab (exp : In.Exp)
                        Out.Scan (f', n_dec, arr_dec, elem_type, pos))
                  else raise (err ("neutral element", n_type))
             else raise err ("array element", elem_type)
-         end 
+         end
 
      | In.Replicate (n_exp, exp, t, pos)
       => let val (n_type, n_dec) = checkExp ftab vtab n_exp

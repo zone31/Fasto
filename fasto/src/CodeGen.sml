@@ -390,6 +390,40 @@ structure CodeGen = struct
         in  code1 @ code2 @
             [Mips.SLT (place,t1,t2)]
         end
+    | And (e1, e2, pos) =>
+        let val falseLabel = newName "falseLabel"
+            val endLabel   = newName "endLabel"
+            val t1         = newName "and_L"
+            val t2         = newName "and_R"
+            val code1      = compileExp e1 vtable t1
+            val code2      = compileExp e2 vtable t2
+        in code1                           @
+           [Mips.BEQ (t1, "0", falseLabel)] @
+           code2                            @
+           [Mips.BEQ (t2, "0", falseLabel)] @
+           [Mips.LI (place, "1")]           @
+           [Mips.J endLabel]                @
+           [Mips.LABEL falseLabel]          @
+           [Mips.LI (place, "0")]           @
+           [Mips.LABEL endLabel]
+         end
+    | Or (e1, e2, pos) =>
+        let val trueLabel = newName "trueLabel"
+            val endLabel  = newName "endLabel"
+            val t1        = newName "or_L"
+            val t2        = newName "or_R"
+            val code1     = compileExp e1 vtable t1
+            val code2     = compileExp e2 vtable t2
+        in code1                           @
+           [Mips.BNE (t1, "0", trueLabel)] @
+           code2                           @
+           [Mips.BNE (t2, "0", trueLabel)] @
+           [Mips.LI (place, "0")]          @
+           [Mips.J endLabel]               @
+           [Mips.LABEL trueLabel]          @
+           [Mips.LI (place, "1")]          @
+           [Mips.LABEL endLabel]
+        end
 
 (*********************************************************)
 (*** Indexing: 1. generate code to compute the index   ***)
