@@ -1,4 +1,4 @@
-fun [char] printbool(bool b) = if b then write("true") else write("false")
+fun [char] printbool(bool b) = if b then write("true ") else write("false ")
 
 fun int main() =
     let to = false in

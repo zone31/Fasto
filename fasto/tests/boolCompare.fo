@@ -1,0 +1,17 @@
+fun [char] printbool(bool b) = if b then write("true ") else write("false ")
+
+fun int main() =
+    let False = false in
+    let True = true in
+    let w = printbool(False) in // false
+    let w = printbool(True) in // true
+    let w = printbool(True == True) in // true
+    let w = printbool(True == False) in // false
+    let w = printbool(True == False || not False == True) in // true
+    let w = printbool(1+2 == 2) in // false
+    let w = printbool(10*2 == 20 ) in // true
+    let w = printbool(10/2 == 5 ) in // true
+    let w = printbool(False == True || not False && True == false) in // false
+
+
+        0

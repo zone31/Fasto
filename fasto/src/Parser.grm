@@ -12,19 +12,20 @@ open Fasto.UnknownTypes
 %token <int*(int*int)> NUM
 %token <char*(int*int)> CHARLIT
 %token <bool*(int*int)> BOOLLIT
-%token <(int*int)> PLUS MINUS DEQ EQ LTH TIMES DIVIDE BOOLAND BOOLOR NOT NEG
+%token <(int*int)> PLUS MINUS TIMES DIVIDE DEQ EQ LTH BOOLAND BOOLOR NOT NEG
 %token <(int*int)> LPAR RPAR LBRACKET RBRACKET LCURLY RCURLY
 %token <(int*int)> COMMA
 %token <(int*int)> FUN FN IOTA REPLICATE MAP REDUCE FILTER SCAN READ WRITE
 %token <(int*int)> OP
 
 %nonassoc ifprec letprec
-%left LTH DEQ
-%left MUL DIV
+%left BOOLOR 
+%left BOOLAND 
+$left NOT 
+%left DEQ LTH
+%left TIMES DIVIDE
 %left PLUS MINUS
-%left BOOLOR
-%left BOOLAND
-%nonassoc NOT NEG
+%left NEG
 
 %start Prog
 %type <Fasto.UnknownTypes.Prog> Prog
