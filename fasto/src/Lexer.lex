@@ -50,6 +50,7 @@
        | "op"           => Parser.OP pos
        | "true"         => Parser.BOOLLIT (true, pos)
        | "false"        => Parser.BOOLLIT (false, pos)
+       | "not"          => Parser.NOT pos
        | _              => Parser.ID (s, pos)
 
  }
@@ -87,6 +88,7 @@ rule Token = parse
   | "=="                { Parser.DEQ      (getPos lexbuf) }
   | "&&"                { Parser.BOOLAND  (getPos lexbuf) }
   | "||"                { Parser.BOOLOR   (getPos lexbuf) }
+  | "~"                 { Parser.NEG      (getPos lexbuf) }
   | `=`                 { Parser.EQ       (getPos lexbuf) }
   | `<`                 { Parser.LTH      (getPos lexbuf) }
   | `(`                 { Parser.LPAR     (getPos lexbuf) }

@@ -429,6 +429,20 @@ structure CodeGen = struct
            [Mips.LABEL endLabel]
         end
 
+    | Not (e1, pos) =>
+        let val zeroLabel = newName "zeroLabel"
+            val endLabel  = newName "endLabel"
+            val t1        = newName "not_R"
+            val code      = compileExp e1 vtable t1
+        in code                            @
+           [Mips.BEQ (t1, "0", zeroLabel)] @
+           [Mips.XOR (place, t1, t1)]      @
+           [Mips.J endLabel]               @
+           [Mips.LABEL zeroLabel]          @
+           [Mips.LI (place, "1")]          @
+           [Mips.LABEL endLabel]
+        end
+
 (*********************************************************)
 (*** Indexing: 1. generate code to compute the index   ***)
 (***           2. check index within bounds            ***)

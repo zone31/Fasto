@@ -145,6 +145,13 @@ and checkExp ftab vtab (exp : In.Exp)
       => let val (t, e1_dec, e2_dec) = checkBinOp ftab vtab (pos, Bool, e1, e2)
          in (Bool, Out.Or (e1_dec, e2_dec, pos)) end
 
+    | In.Not (e1, pos)
+      => let val (t, e1_dec) = checkExp ftab vtab e1
+         in case t of
+             Bool      => (t, Out.Not (e1_dec, pos))
+           | otherwise => raise Error ("Not expects boolean", pos)
+         end
+
     | In.If (pred, e1, e2, pos)
       => let val (pred_t, pred') = checkExp ftab vtab pred
              val (t1, e1') = checkExp ftab vtab e1

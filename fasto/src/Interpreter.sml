@@ -200,6 +200,13 @@ fun evalExp ( Constant (v,_), vtab, ftab ) = v
         in  evalBinopNum(op Int.quot, res1, res2, pos)
         end
 
+  | evalExp ( Negate(e1, pos), vtab, ftab ) =
+        let val r = evalExp(e1, vtab, ftab)
+        in case r of
+            IntVal i  => IntVal (~i)
+          | otherwise => raise Error("Negation expect an int value", pos)
+        end
+
   | evalExp ( Equal(e1, e2, pos), vtab, ftab ) =
         let val r1 = evalExp(e1, vtab, ftab)
             val r2 = evalExp(e2, vtab, ftab)
@@ -222,6 +229,14 @@ fun evalExp ( Constant (v,_), vtab, ftab ) = v
         let val r1 = evalExp(e1, vtab, ftab)
             val r2 = evalExp(e2, vtab, ftab)
         in evalOr(r1, r2, pos)
+        end
+
+  | evalExp ( Not(e1, pos), vtab, ftab ) =
+        let val r1 = evalExp(e1, vtab, ftab)
+        in case r1 of
+            BoolVal true  => BoolVal false
+          | BoolVal false => BoolVal true
+          | other         => raise Error("Not expects a boolean value", pos)
         end
 
   | evalExp ( If(e1, e2, e3, pos), vtab, ftab ) =

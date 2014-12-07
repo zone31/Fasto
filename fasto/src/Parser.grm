@@ -12,18 +12,19 @@ open Fasto.UnknownTypes
 %token <int*(int*int)> NUM
 %token <char*(int*int)> CHARLIT
 %token <bool*(int*int)> BOOLLIT
-%token <(int*int)> PLUS MINUS DEQ EQ LTH TIMES DIVIDE BOOLAND BOOLOR
+%token <(int*int)> PLUS MINUS DEQ EQ LTH TIMES DIVIDE BOOLAND BOOLOR NOT NEG
 %token <(int*int)> LPAR RPAR LBRACKET RBRACKET LCURLY RCURLY
 %token <(int*int)> COMMA
 %token <(int*int)> FUN FN IOTA REPLICATE MAP REDUCE FILTER SCAN READ WRITE
 %token <(int*int)> OP
 
 %nonassoc ifprec letprec
-%left DEQ LTH
+%left LTH DEQ
 %left MUL DIV
 %left PLUS MINUS
-%left BOOLAND
 %left BOOLOR
+%left BOOLAND
+%nonassoc NOT NEG
 
 %start Prog
 %type <Fasto.UnknownTypes.Prog> Prog
@@ -80,10 +81,12 @@ Exp :     NUM                 { Constant (IntVal (#1 $1), #2 $1) }
         | Exp MINUS Exp       { Minus($1, $3, $2) }
         | Exp TIMES Exp       { Times($1, $3, $2) }
         | Exp DIVIDE Exp      { Divide($1, $3, $2) }
+        | NEG Exp             { Negate($2, $1) }
         | Exp DEQ Exp         { Equal($1, $3, $2) }
         | Exp LTH Exp         { Less($1, $3, $2) }
         | Exp BOOLAND Exp     { And($1, $3, $2) }
         | Exp BOOLOR Exp      { Or($1, $3, $2) }
+        | NOT Exp             { Not($2, $1) }
         | IF Exp THEN Exp ELSE Exp %prec ifprec
                               { If ($2, $4, $6, $1) }
 
