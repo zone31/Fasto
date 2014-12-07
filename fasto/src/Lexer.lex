@@ -48,6 +48,8 @@
        | "read"         => Parser.READ pos
        | "write"        => Parser.WRITE pos
        | "op"           => Parser.OP pos
+       | "true"         => Parser.BOOLLIT (true, pos)
+       | "false"        => Parser.BOOLLIT (false, pos)
        | _              => Parser.ID (s, pos)
 
  }
