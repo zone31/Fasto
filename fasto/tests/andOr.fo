@@ -1,0 +1,16 @@
+fun [char] writebool(bool b) = if b then write("true") else write("false")
+
+fun int main() =
+    let a = 1 == 1 in        // a = true
+    let b = 1 == 2 in        // a = false
+    let c = a || b && a in   // c = true
+    let d = a && b in        // d = false
+    let e = a || b in        // e = true
+    let f = (a || b) && b in // f = false
+    let w = writebool(a) in
+    let w = writebool(b) in
+    let w = writebool(c) in
+    let w = writebool(d) in
+    let w = writebool(e) in
+    let w = writebool(f) in
+        0
