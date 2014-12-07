@@ -1,0 +1,15 @@
+fun int test(int x) = 
+    let w = write (x)  in
+    0 
+
+fun int main() =
+    let w =  test(3/2) in
+    let w =  test(5/3) in
+    let w =  test(10/9) in
+    let w =  test(10/11) in
+    let w =  test(~10/2) in
+    let w =  test(~10/~2) in
+    let w =  test(10/~2) in
+    
+    0
+    
