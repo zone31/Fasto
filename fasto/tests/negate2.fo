@@ -1,0 +1,6 @@
+fun int main() =
+    let w = write(~2 * 4) in
+    let w = write(2 * 4) in
+    let w = write(~2 - ~2) in
+    let w = write(~5 + 5) in
+        0

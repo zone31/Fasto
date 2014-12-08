@@ -20,15 +20,14 @@ open Fasto.UnknownTypes
 
 %nonassoc ifprec letprec
 
-%left BOOLOR 
-%left BOOLAND 
-$left NOT 
+%left BOOLOR
+%left BOOLAND
+$left NOT
 %left DEQ LTH
 %left PLUS MINUS
 %left TIMES
 %left DIVIDE
 %left NEG
-
 
 %start Prog
 %type <Fasto.UnknownTypes.Prog> Prog

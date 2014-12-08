@@ -281,6 +281,15 @@ structure CodeGen = struct
             applyCode              (* Jump to function and store result in place *)
         end
 
+    | Negate (e, pos) =>
+        let val negThis = newName "negThis"
+            val neg1    = newName "neg1"
+            val code    = compileExp e vtable negThis
+        in code @
+           [Mips.LI (neg1, "-1")] @
+           [Mips.MUL (place, neg1, negThis)]
+        end
+
 (********************************************************************)
 (*** dirty I/O. Read and Write: supported for basic types:        ***)
 (*** Int, Char, Bool via SYSCALLS. Write of an Array(Chars)       ***)
