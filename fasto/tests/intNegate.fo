@@ -10,6 +10,9 @@ fun int main() =
     let w =  test(~10/2) in
     let w =  test(~10/~2) in
     let w =  test(10/~2) in
+    let w =  test(5/~3) in
+    let w =  test(1+2+5/3*9+3) in
+    let w =  test(5+10/~2*3-~2) in //(5+((5/(-2))*3))-(-3)= -1.5 ~~ -1
     
     0
     
