@@ -152,7 +152,7 @@ and checkExp ftab vtab (exp : In.Exp)
            | otherwise => raise Error ("Not expects boolean", pos)
          end
 
-| In.Negate (e1, pos)
+    | In.Negate (e1, pos)
       => let val (t, e1_dec) = checkExp ftab vtab e1
          in case t of
              Int      => (t, Out.Negate (e1_dec, pos))

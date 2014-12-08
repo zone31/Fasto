@@ -4,7 +4,7 @@
 \usepackage{graphicx} % \includegraphics
 \usepackage{fancyhdr, amsmath, amssymb, comment, caption, placeins, subfigure,
     fixltx2e, changepage, listings, courier, soul, hyperref, geometry,
-    enumerate, dsfont}
+    enumerate, dsfont, listings}
 
 \author{
     \Large{Magnus N\o rskov Stavngaard, Mark Jan Jacobi and Christian
@@ -53,7 +53,131 @@
     \pagenumbering{arabic} % Arabic page numbers (and reset to 1)
 
     \section{Task 1 - Warmup}
-    Hej hej hej
+    In task 1 we were asked to implement the boolean operators \texttt{\&\&},
+    \texttt{||} and \texttt{not}, the boolean constants true and false, integer
+    multiplication, integer division and integer negation. \\
 
+    We will go through in detail the implementation of integer division and
+    multiplication and then skip rather quickly over the implementation of the
+    rest of the operators only describing what is different from multiplication
+    and division as the operations is implemented very similar.
+
+    \subsection{Integer Multiplication and Division}
+    We started by implementing integer multiplication and division in the Lexer.
+    We created a new rule for the star and division operator that created tokens
+    and passed the tokens to the parser.
+
+    \begin{lstlisting}[basicstyle=\small]
+| `*`   { Parser.TIMES    (getPos lexbuf) }
+| `/`   { Parser.DIVIDE   (getPos lexbuf) }
+    \end{lstlisting}
+
+    In the parser we added the tokens where addition and subtraction was already
+    defined, as integer multiplication and division has allot in common with
+    addition and subtraction.  Integer multiplication and division carries two
+    integers corresponding to a position in the code.
+
+    \begin{lstlisting}[basicstyle=\small]
+%token <(int*int)> PLUS MINUS TIMES DIVIDE DEQ EQ LTH BOOLAND BOOLOR NOT NEG
+    \end{lstlisting}
+
+    We also declare both times and divide as left associative operators with
+    greater precedence than addition and subtraction.
+
+    \begin{lstlisting}[basicstyle=\small]
+%left BOOLOR
+%left BOOLAND
+%left NOT
+%left DEQ LTH
+%left PLUS MINUS
+%left TIMES
+%left DIVIDE
+%left NEG
+    \end{lstlisting}
+
+    We then defined that an expression could consist of an expression followed
+    by a multiplication or division followed by an expression.  And that this
+    correspond to \texttt{Times} and \texttt{Divide} in the Fasto language definition.
+
+    \begin{lstlisting}[basicstyle=\small]
+Exp :     NUM                 { Constant (IntVal (#1 $1), #2 $1) }
+        | CHARLIT             { Constant (CharVal (#1 $1), #2 $1) }
+
+        (...)
+
+        | Exp TIMES Exp       { Times($1, $3, $2) }
+        | Exp DIVIDE Exp      { Divide($1, $3, $2) }
+
+        (...)
+    \end{lstlisting}
+
+    In the interpreter we implemented cases for \texttt{Times} and
+    \texttt{Divide} in the \texttt{evalExpr} function.
+
+    \begin{lstlisting}[basicstyle=\small]
+| evalExp ( Times(e1, e2, pos), vtab, ftab ) =
+      let val res1 = evalExp(e1, vtab, ftab)
+          val res2 = evalExp(e2, vtab, ftab)
+      in  evalBinopNum(op *, res1, res2, pos)
+      end
+
+| evalExp ( Divide(e1, e2, pos), vtab, ftab ) =
+      let val res1 = evalExp(e1, vtab, ftab)
+          val res2 = evalExp(e2, vtab, ftab)
+      in  evalBinopNum(op Int.quot, res1, res2, pos)
+      end
+    \end{lstlisting}
+
+    Our cases evaluate recursively the expressions to the left and right of the
+    operator and then calls \texttt{evalBinopNum} with the appropriate operator
+    and the results from evaluating the lefthand and the righthand side of the
+    expression. \\
+
+    We then implemented the operators in the typechecker.  Our cases call a
+    helper function \texttt{checkBinOp} that takes a position, an expected type,
+    and two expressions and check that the two expressions have the type of the
+    expected type.  If the types match the types is returned with
+    \textit{typedecorated} versions of the expressions, if the types doesn't
+    match an error is raised. \\
+    We then simply return the same operation, now with a return type.
+
+    \begin{lstlisting}[basicstyle=\small]
+| In.Times (e1, e2, pos)
+  => let val (_, e1_dec, e2_dec) = checkBinOp ftab vtab (pos, Int, e1, e2)
+     in (Int, Out.Times (e1_dec, e2_dec, pos))
+     end
+
+| In.Divide (e1, e2, pos)
+  => let val (_, e1_dec, e2_dec) = checkBinOp ftab vtab (pos, Int, e1, e2)
+     in (Int, Out.Divide (e1_dec, e2_dec, pos))
+     end
+    \end{lstlisting}
+
+    We can now finally implement the operators in the code generator.  Here we
+    create two temporary variables \texttt{t1} and \texttt{t2} to hold the
+    values of the expression on either side of the operator.  We then call the
+    function \texttt{compileExp} recursively with these names to get the machine
+    code for the expression on either side of the operator.  Then we just simply
+    return a list of first the code to compute the left hand side of the
+    operator, then the right hand side, and then we apply the MIPS commands
+    \texttt{MUL} and \texttt{DIV} to the two \textit{subresults} and save the
+    result in \texttt{place}.
+
+    \begin{lstlisting}[basicstyle=\small]
+| Times (e1, e2, pos) =>
+    let val t1 = newName "times_L"
+        val t2 = newName "times_R"
+        val code1 = compileExp e1 vtable t1
+        val code2 = compileExp e2 vtable t2
+    in  code1 @ code2 @ [Mips.MUL (place, t1, t2)]
+    end
+| Divide (e1, e2, pos) =>
+    let val t1 = newName "divide_L"
+        val t2 = newName "divide_R"
+        val code1 = compileExp e1 vtable t1
+        val code2 = compileExp e2 vtable t2
+    in  code1 @ code2 @ [Mips.DIV (place, t1, t2)]
+    end
+    \end{lstlisting}
 
 \end{document}

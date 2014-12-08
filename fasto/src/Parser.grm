@@ -22,7 +22,7 @@ open Fasto.UnknownTypes
 
 %left BOOLOR
 %left BOOLAND
-$left NOT
+%left NOT
 %left DEQ LTH
 %left PLUS MINUS
 %left TIMES
