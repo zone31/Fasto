@@ -97,7 +97,8 @@
 
     We then defined that an expression could consist of an expression followed
     by a multiplication or division followed by an expression.  And that this
-    correspond to \texttt{Times} and \texttt{Divide} in the Fasto language definition.
+    correspond to \texttt{Times} and \texttt{Divide} in the Fasto language
+    definition.
 
     \begin{lstlisting}[basicstyle=\small]
 Exp :     NUM                 { Constant (IntVal (#1 $1), #2 $1) }
@@ -179,30 +180,103 @@ Exp :     NUM                 { Constant (IntVal (#1 $1), #2 $1) }
     in  code1 @ code2 @ [Mips.DIV (place, t1, t2)]
     end
     \end{lstlisting}
-    
+
+    \subsection{Boolean Operators}
+    We started by implementing the boolean operators in the lexer in a very
+    similar way that we implemented multiplication and division.  In the parser,
+    we made sure that the boolean operators were defined as having a lower
+    precedence than the arithmetic operators, so that an expression like,
+
+    \begin{lstlisting}[basicstyle=\small]
+        2 + 4 == 6 || 5 + 8 == 10 && 8 < 10
+    \end{lstlisting}
+
+    is evaluated like,
+
+    \begin{lstlisting}[basicstyle=\small]
+        (2 + 4 == 6) || ((5 + 8 == 10) && (8 < 10)).
+    \end{lstlisting}
+
+    Notice that the \texttt{\&\&} operator is also evaluated before the
+    \texttt{||} operator. \\
+
+    After this we implemented the operators in the interpreter.  Here we created
+    two new functions \texttt{evalAnd} and \texttt{evalOr} which evaluated and
+    and or operations and returned an error if the expression to the left or
+    right of the operators didn't return a boolean value.
+
+    \begin{lstlisting}[basicstyle=\small]
+fun evalAnd (BoolVal e1, BoolVal e2, pos) = BoolVal (e1 andalso e2)
+  | evalAnd (e1, e2, pos) = raise Error("&& expects bool operands", pos)
+
+fun evalOr (BoolVal e1, BoolVal e2, pos) = BoolVal (e1 orelse e2)
+  | evalOr (e1, e2, pos) = raise Error("|| expects bool operands", pos)
+    \end{lstlisting}
+
+    We evaluated the expressions to the left and right of the operator and then
+    called the helper functions afterwards. \\
+
+    In the code generator it was required that we implemented the boolean
+    operators to be short-circuiting so that the right hand side of an and only
+    evaluates if the left hand side is true. Similarly the right hand side of an
+    or evaluates only if the left hand side is false.  We did this with the MIPS
+    assembly code,
+
+    \begin{lstlisting}[basicstyle=\small]
+;; Code computing the left hand side of an and, and saving result to $t1
+
+beq $t1, $zero, False
+
+;; Code computing the right hand side of an and, and saving the result to $t2
+
+beq $t2, $zero, False
+li  $s1, 1 ;; Assuming the result should be saved to $s1
+j   End
+
+False:
+    li  $s1, 0 ;; Assuming the result should be saved to $s2
+
+End:
+    \end{lstlisting}
+
+    It can be seen that if the first part of an and return false i.e. the
+    result register contains 0, we simply skip over the execution of the right
+    hand side and jump strait to False.  We did something similar for or's.
+
     \section{Task 2 - Implement \texttt{filter} and \texttt{scan}}
     \subsection{Typerules}
-    The typerules for \texttt{filter} and \texttt{scan} have been based on the already existing typerules for \texttt{map} and \texttt{reduce}. They are as follows: \\
-    
-    \texttt{filter}: (a $\rightarrow$ bool) $\ast$ [a] $\rightarrow$ [a], typerules for \texttt{filter(f, x)}:
+    The typerules for \texttt{filter} and \texttt{scan} have been based on the
+    already existing typerules for \texttt{map} and \texttt{reduce}. They are as
+    follows: \\
+
+    \texttt{filter}: ($\alpha \rightarrow$ bool) $\ast$ $[\alpha]$ $\rightarrow$
+    $[\alpha]$, typerule for \texttt{filter(f, x)}:
     \vspace{-2.5mm}
     \begin{itemize}[noitemsep]
-    \item compute t, the type of x and check that $\text{t} = [\text{t}_\text{e}]$ for some type $\text{t}_\text{e}$
-    \item get f's signature from \texttt{ftable}. \texttt{IF} f does not recieve exactly one argument
-        \texttt{THEN} return \texttt{error()} \texttt{ELSE} $\text{f: t}_{\text{in}} \rightarrow \text{t}_{\text{out}}$ for some types $\text{t}_{\text{in}}$ and $\text{t}_{\text{out}}$.
-    \item \texttt{IF} $\text{t}_{\text{in}} = \text{t}_\text{e}$ \texttt{AND} $\text{t}_{\text{out}} = \texttt{bool}$ \texttt{THEN filter(f, x)
-        ELSE error()}
+        \item compute t, the type of x and check that $\text{t} =
+            [\text{t}_\text{e}]$ for some type $\text{t}_\text{e}$
+        \item get f's signature from \texttt{ftable}. \texttt{IF} f does not
+            receive exactly one argument \texttt{THEN} return \texttt{error()}
+            \texttt{ELSE} $\text{f: t}_{\text{in}} \rightarrow
+            \text{t}_{\text{out}}$ for some types $\text{t}_{\text{in}}$ and
+            $\text{t}_{\text{out}}$.
+        \item \texttt{IF} $\text{t}_{\text{in}} = \text{t}_\text{e}$
+            \texttt{AND} $\text{t}_{\text{out}} = \texttt{bool}$ \texttt{THEN
+            filter(f, x) ELSE error()}.
     \end{itemize}
-    
-    \texttt{scan}: (a  $\ast$ a $\rightarrow$ a) $\ast$ a  $\ast$ [a] $\rightarrow$ [a], typerules for \texttt{scan(f, e, x)}:
+
+    \texttt{scan}: ($\alpha \ast \alpha \rightarrow \alpha$) $\ast$ $\alpha$
+    $\ast$ [$\alpha$] $\rightarrow$ [$\alpha$], typerule for
+    \texttt{scan(f, e, x)}:
     \vspace{-2.5mm}
     \begin{itemize}[noitemsep]
-    \item Compute t, the type of e and $\text{t}_\text{x}$, the type of x and check that:
-    	\begin{enumerate}[noitemsep]
-    	\item f: (t $\ast$ t) $\rightarrow$ t
-    	\item $\text{t}_\text{x} = [\text{t}]$
-		\end{enumerate}
-    \item If so then \texttt{scan(f, e, x)}
+        \item Compute t, the type of e and $\text{t}_\text{x}$, the type of x
+            and check that:
+        	\begin{enumerate}[noitemsep]
+        	   \item f: (t $\ast$ t) $\rightarrow$ t
+        	   \item $\text{t}_\text{x} = [\text{t}]$
+    		\end{enumerate}
+        \item If so then \texttt{scan(f, e, x)}
     \end{itemize}
 
 \end{document}

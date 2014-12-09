@@ -410,7 +410,7 @@ structure CodeGen = struct
             val t2         = newName "and_R"
             val code1      = compileExp e1 vtable t1
             val code2      = compileExp e2 vtable t2
-        in code1                           @
+        in code1                            @
            [Mips.BEQ (t1, "0", falseLabel)] @
            code2                            @
            [Mips.BEQ (t2, "0", falseLabel)] @
