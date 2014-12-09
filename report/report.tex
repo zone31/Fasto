@@ -4,7 +4,7 @@
 \usepackage{graphicx} % \includegraphics
 \usepackage{fancyhdr, amsmath, amssymb, comment, caption, placeins, subfigure,
     fixltx2e, changepage, listings, courier, soul, hyperref, geometry,
-    enumerate, dsfont, listings}
+    enumerate, dsfont, listings, enumitem}
 
 \author{
     \Large{Magnus N\o rskov Stavngaard, Mark Jan Jacobi and Christian
@@ -179,5 +179,30 @@ Exp :     NUM                 { Constant (IntVal (#1 $1), #2 $1) }
     in  code1 @ code2 @ [Mips.DIV (place, t1, t2)]
     end
     \end{lstlisting}
+    
+    \section{Task 2 - Implement \texttt{filter} and \texttt{scan}}
+    \subsection{Typerules}
+    The typerules for \texttt{filter} and \texttt{scan} have been based on the already existing typerules for \texttt{map} and \texttt{reduce}. They are as follows: \\
+    
+    \texttt{filter}: (a $\rightarrow$ bool) $\ast$ [a] $\rightarrow$ [a], typerules for \texttt{filter(f, x)}:
+    \vspace{-2.5mm}
+    \begin{itemize}[noitemsep]
+    \item compute t, the type of x and check that $\text{t} = [\text{t}_\text{e}]$ for some type $\text{t}_\text{e}$
+    \item get f's signature from \texttt{ftable}. \texttt{IF} f does not recieve exactly one argument
+        \texttt{THEN} return \texttt{error()} \texttt{ELSE} $\text{f: t}_{\text{in}} \rightarrow \text{t}_{\text{out}}$ for some types $\text{t}_{\text{in}}$ and $\text{t}_{\text{out}}$.
+    \item \texttt{IF} $\text{t}_{\text{in}} = \text{t}_\text{e}$ \texttt{AND} $\text{t}_{\text{out}} = \texttt{bool}$ \texttt{THEN filter(f, x)
+        ELSE error()}
+    \end{itemize}
+    
+    \texttt{scan}: (a  $\ast$ a $\rightarrow$ a) $\ast$ a  $\ast$ [a] $\rightarrow$ [a], typerules for \texttt{scan(f, e, x)}:
+    \vspace{-2.5mm}
+    \begin{itemize}[noitemsep]
+    \item Compute t, the type of e and $\text{t}_\text{x}$, the type of x and check that:
+    	\begin{enumerate}[noitemsep]
+    	\item f: (t $\ast$ t) $\rightarrow$ t
+    	\item $\text{t}_\text{x} = [\text{t}]$
+		\end{enumerate}
+    \item If so then \texttt{scan(f, e, x)}
+    \end{itemize}
 
 \end{document}
