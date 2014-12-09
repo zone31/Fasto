@@ -6,4 +6,6 @@ Parser.sig
 Parser.sml
 Parser.output
 Lexer.sml
-
+report/*.out
+report/*.log
+report/*.aux
