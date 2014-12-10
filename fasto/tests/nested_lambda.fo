@@ -1,0 +1,5 @@
+fun int main() =
+    let a = {{1, 2, 3, 4}, {1, 2, 3}, {1, 2}, {1}} in
+        reduce(fn int (int a, int b) => a + b, 0,
+            map(fn int ([int] arr) =>
+                reduce(fn int (int a, int b) => a + b, 0, arr), a))
