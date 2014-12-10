@@ -51,6 +51,7 @@
        | "true"         => Parser.BOOLLIT (true, pos)
        | "false"        => Parser.BOOLLIT (false, pos)
        | "not"          => Parser.NOT pos
+       | "fn"           => Parser.LAMBDA pos
        | _              => Parser.ID (s, pos)
 
  }
@@ -89,6 +90,7 @@ rule Token = parse
   | "&&"                { Parser.BOOLAND  (getPos lexbuf) }
   | "||"                { Parser.BOOLOR   (getPos lexbuf) }
   | "~"                 { Parser.NEG      (getPos lexbuf) }
+  | "=>"                { Parser.LAMBDAEQ (getPos lexbuf) }
   | `=`                 { Parser.EQ       (getPos lexbuf) }
   | `<`                 { Parser.LTH      (getPos lexbuf) }
   | `(`                 { Parser.LPAR     (getPos lexbuf) }

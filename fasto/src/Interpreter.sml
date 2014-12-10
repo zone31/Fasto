@@ -504,6 +504,11 @@ and evalFunArg (FunName fid, vtab, ftab, callpos) =
         NONE   => raise Error("Function "^fid^" is not in SymTab!", callpos)
       | SOME f => (fn aargs => callFun(f, aargs, ftab, callpos), getFunRTP f)
     end
+  | evalFunArg (Lambda (tp, paralist, exp, pos), vtab, ftab, pcall) =
+    let val fexp = FunDec ("lambda", tp, paralist, exp, pos)
+    in (fn aargs => callFunWithVtable(fexp, aargs, vtab, ftab, pcall), tp)
+    end
+
    (* TODO TASK 3:
 
    Add case for Lambda.  This can be done by constructing an
