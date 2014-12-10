@@ -62,7 +62,7 @@ fun printable (Int) = true
 fun checkBinOp ftab vtab (pos, t, e1, e2) =
     let val (t1, e1') = checkExp ftab vtab e1
         val (t2, e2') = checkExp ftab vtab e2
-        val t = unifyTypes pos (t1, t2)
+        val t = unifyTypes pos (t, unifyTypes pos (t1,t2))
     in (t, e1', e2') end
 
 (* Determine the type of an expression.  On the way, decorate each node in the
