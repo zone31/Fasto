@@ -641,6 +641,13 @@ structure CodeGen = struct
            @ loop_map1
            @ loop_footer
         end
+    | Filter (farg, arr_exp, elem_type, pos) => raise Error("Filter not implemented", pos)
+
+    | Scan (farg, acc_exp, arr_exp, elem_type, pos) => raise Error("Scan not implemented", pos)
+
+
+
+
 
     (* reduce(f, acc, {x1, x2, ...}) = f(..., f(x2, f(x1, acc))) *)
     | Reduce (binop, acc_exp, arr_exp, tp, pos) =>
