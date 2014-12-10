@@ -279,4 +279,68 @@ End:
         \item If so then \texttt{scan(f, e, x)}
     \end{itemize}
 
+    \section{$\lambda$-expressions in SOAC's}
+    We implemented lambda functions in the lexer by creating a keyword
+    \texttt{fn} corresponding to a \texttt{LAMBDA} in the parser.  We also
+    created a token for the special equals symbols used in lambda expressions
+    (=$>$).  We called this token \texttt{LAMBDAEQ}.  We then implemented lambdas
+    in the parser.  We did this by observing that the \texttt{map} function in
+    the parser is defined as,
+
+    \begin{lstlisting}[basicstyle=\small]
+| MAP LPAR FunArg COMMA Exp RPAR { Map ($3, $5, (), (), $1) }
+    \end{lstlisting}
+
+    meaning that the lambda is supposed to passed as a \texttt{FunArg}.  We then
+    looked at the declaration of a FunArg,
+
+    \begin{lstlisting}[basicstyle=\small]
+FunArg : ID { FunName (#1 $1) },
+    \end{lstlisting}
+
+    and added to this definition a case for a lambda function.  In Fasto a
+    \texttt{FunArg} is defined as,
+
+    \begin{lstlisting}[basicstyle=\small]
+and FunArg = Lambda of Type * Param list * Exp * pos
+           | FunName of string.
+    \end{lstlisting}
+
+    We then just took the syntax of a lambda and translated that to a list of
+    tokens.  Then we pattern matched on that expression and transfered the
+    values needed by the lambda in Fasto.
+
+    \begin{lstlisting}[basicstyle=\small]
+FunArg : ID { FunName (#1 $1) }
+     |   LAMBDA Type LPAR Params RPAR LAMBDAEQ Exp { Lambda ($2, $4, $7, $1) }
+    \end{lstlisting}
+
+    We implemented lambdas in the interpreter by changing the way function
+    arguments are evaluated.  We could do this as it is an invariant of the
+    Fasto programming language that lambdas can only be used in Second Order
+    Array Constructors (SOAC's).  We simply matched a case where
+    \texttt{evalFunArg} is called with a lambda instead of a function name.  We
+    then use this lambda to construct a function definition with the generic
+    name \textit{lambda}.  We then call \texttt{callFunWithVtable} with this
+    function declaration and the vtable passed to the function, this means that
+    we keep the binding between local variable names and their values and the
+    lambda can use these variables.  The function returns an anonymous function
+    in sml that takes an argument list and applies the lambda to those
+    arguments.
+
+    \begin{lstlisting}[basicstyle=\small]
+and evalFunArg (FunName fid, vtab, ftab, callpos) =
+    let
+      val fexp = SymTab.lookup fid ftab
+    in
+      case fexp of
+        NONE   => raise Error("Function "^fid^" is not in SymTab!", callpos)
+      | SOME f => (fn aargs => callFun(f, aargs, ftab, callpos), getFunRTP f)
+    end
+  | evalFunArg (Lambda (tp, paralist, exp, pos), vtab, ftab, pcall) =
+    let val fexp = FunDec ("lambda", tp, paralist, exp, pos)
+    in (fn aargs => callFunWithVtable(fexp, aargs, vtab, ftab, pcall), tp)
+    end
+    \end{lstlisting}
+
 \end{document}
