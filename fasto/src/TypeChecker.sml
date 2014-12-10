@@ -254,7 +254,7 @@ and checkExp ftab vtab (exp : In.Exp)
                    raise Error ("Filter: incompatible function type of "
                                 ^ In.ppFunArg 0 f ^ ":" ^ showFunType (args, res), pos)
          in if elem_type = f_arg_type andalso f_res_type = Bool
-            then (Array f_res_type,
+            then (arr_type,
                   Out.Filter (f', arr_exp_dec, elem_type, pos))
             else raise Error ("Filter: array element types does not match."
                               ^ ppType elem_type ^ " instead of "
@@ -313,9 +313,9 @@ and checkExp ftab vtab (exp : In.Exp)
                         ", expected " ^ ppType f_arg_type, pos)
          in if elem_type = f_arg_type
             then if elem_type = n_type
-                 then (elem_type,
+                 then (arr_type,
                        Out.Scan (f', n_dec, arr_dec, elem_type, pos))
-                 else raise (err ("neutral element", n_type))
+                 else raise err ("neutral element", n_type)
             else raise err ("array element", elem_type)
          end
 
