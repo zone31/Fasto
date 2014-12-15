@@ -22,7 +22,7 @@ int main(int argc, char const *argv[])
 
 int * scan(int *arr, int neutral, int arr_size, int (*func)(int, int))
 {
-    int i, j, res;
+    int i, res;
     int *arr_res = malloc(sizeof(int) * arr_size + 1); /* Plus 1 neutral el. */
 
     arr_res[0] = neutral;

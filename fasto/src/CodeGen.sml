@@ -696,16 +696,54 @@ structure CodeGen = struct
         end
 
 
+    | Scan (farg, acc_exp, arr_exp, tp, pos) =>
+      let val arr_reg   = newName "arr_reg"   (* Address of array given. *)
+          val size_reg  = newName "size_reg"  (* Size of original array. *)
+          val i_reg     = newName "i_reg"     (* Counter register. *)
+          val new_size  = newName "new_size"  (* Size of new array. *)
+          val tmp_reg   = newName "tmp_reg"   (* Various uses. *)
+          val res_reg   = newName "res_reg"   (* Various uses. *)
+          val startlabl = newName "startlabl" (* Start label of while loop. *)
+          val endlabl   = newName "endlabl"   (* The end of while loop. *)
+          val neu_el    = newName "neu_el"    (* Neutral element. *)
+          val elreadreg = newName "elreadreg" (* Element to be read. *)
+          val elwritreg = newName "elwritreg" (* Where to write. *)
 
+          val arr_code  = compileExp arr_exp vtable arr_reg
+          val get_size  = [ Mips.LW (size_reg, arr_reg, "0") ]
+          val comp_size = [ Mips.ADDI (new_size, size_reg, "1") ]
+          val neu_code  = compileExp acc_exp vtable neu_el
 
+          val set_r_w   = [ Mips.ADDI (elreadreg, arr_reg, "4")
+                          , Mips.ADDI (elwritreg, place, "8") ]
 
+          val whileinit = [ Mips.LI (i_reg, "0")
+                          , Mips.SW (neu_el, place, "4") ]
+          val whilecond = [ Mips.LABEL startlabl
+                          , Mips.SLT (tmp_reg, i_reg, size_reg)
+                          , Mips.BEQ (tmp_reg, "0", endlabl) ]
+          val whileloop = [ Mips.LW (res_reg, elreadreg, "0")
+                          , Mips.LW (tmp_reg, elwritreg, "-4") ]
+                          @ applyFunArg(farg, [tmp_reg, res_reg], vtable,
+                                        res_reg, pos)
+                          @ [ Mips.SW (res_reg, elwritreg, "0")
+                          , Mips.ADDI (elreadreg, elreadreg, "4")
+                          , Mips.ADDI (elwritreg, elwritreg, "4")
+                          , Mips.ADDI (i_reg, i_reg, "1")
+                          , Mips.J startlabl ]
+          val while_end = [ Mips.LABEL endlabl ]
 
-
-    | Scan (farg, acc_exp, arr_exp, elem_type, pos) => raise Error("Scan not implemented", pos)
-
-
-
-
+      in arr_code  @ (* Compute input array expr. *)
+         get_size  @ (* Save size of input array to size_reg. *)
+         comp_size @ (* Calculate size of new arr. *)
+         neu_code  @ (* Compute the neutral element. *)
+         dynalloc (new_size, place, tp) @ (* Allocates space for res. *)
+         set_r_w   @ (* Set read and write registers. *)
+         whileinit @ (* While initialization. *)
+         whilecond @ (* Test the while condition. *)
+         whileloop @ (* Code of while. *)
+         while_end   (* While end label. *)
+      end
 
     (* reduce(f, acc, {x1, x2, ...}) = f(..., f(x2, f(x1, acc))) *)
     | Reduce (binop, acc_exp, arr_exp, tp, pos) =>
