@@ -1,0 +1,9 @@
+fun char toHey(char a, char b) = 'm'
+
+fun char writeChar(char c) = write(c)
+
+fun int main() =
+    let a = {'a', 'b', 'c'} in
+    let b = scan(toHey, 'm', a) in
+    let m = map(writeChar, b) in
+        0
