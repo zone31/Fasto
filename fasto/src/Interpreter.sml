@@ -108,12 +108,6 @@ fun evalRelop ( bop, IntVal n1,     IntVal n2,     pos ) =
   | evalRelop ( bop, e1, e2, pos ) =
     invalidOperands [(Int, Int), (Bool, Bool), (Char, Char)] e1 e2 pos
 
-fun evalAnd (BoolVal e1, BoolVal e2, pos) = BoolVal (e1 andalso e2)
-  | evalAnd (e1, e2, pos) = raise Error("&& expects bool operands", pos)
-
-fun evalOr (BoolVal e1, BoolVal e2, pos) = BoolVal (e1 orelse e2)
-  | evalOr (e1, e2, pos) = raise Error("|| expects bool operands", pos)
-
 (* Index into an array. Check that the index is not out of bounds. *)
 fun applyIndexing( ArrayVal(lst, tp), IntVal ind, pos ) =
         let val len = List.length(lst)
