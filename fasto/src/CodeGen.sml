@@ -838,7 +838,12 @@ structure CodeGen = struct
       let val tmp_reg = newName "tmp_reg"
       in  applyRegs(s, args, tmp_reg, pos) @ [Mips.MOVE(place, tmp_reg)] end
 
-    | applyFunArg (Lambda (tp, paralist, exp, _) , args, vtable, place, pos) = raise Error ("Implementer Lambda!", pos)
+    | applyFunArg (Lambda (tp, paralist, exp, _), args, vtable, place, pos) =
+      (*let val tmp_reg = newName "tmp_reg"
+          val body    = compileExp exp
+      in applyRegs("123_lambda", args, tmp_reg, pos)
+       @*)
+      raise Error ("Implementer Lambda!", pos)
 
     (*Mips.Prog =
       let val tmp_reg = newName "tmp_reg"

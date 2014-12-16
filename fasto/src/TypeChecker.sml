@@ -360,9 +360,7 @@ and checkFunArg (In.FunName fname, vtab, ftab, pos) =
     let val infdec  = In.FunDec ("123_lambda", tp, params, expr, pos)
         val Out.FunDec (str, tp', params', expr', pos') =
               checkFunWithVtable(infdec, vtab, ftab, callpos)
-
-        val paramtps = map (fn _ => tp) params (* This is wrong!!! *)
-
+        val paramtps = map (fn Param (str, tp) => tp) params
     in  (Out.Lambda (tp', params', expr', pos'), tp', paramtps) end
 
 (* Check a function declaration, but using a given vtable rather
