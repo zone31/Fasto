@@ -642,10 +642,6 @@ structure CodeGen = struct
            @ loop_footer
         end
 
-
-
-
-
     | Filter (farg, arr_exp, elem_type, pos) =>
         let val size_reg = newName "size_reg" (* size of input/output array *)
             val arr_reg  = newName "arr_reg" (* address of array *)
@@ -665,7 +661,7 @@ structure CodeGen = struct
 
             val loop_beg = newName "loop_beg"
             val loop_end = newName "loop_end"
-            val test_reg = newName "test_reg"
+            val value_reg = newName "value_reg"
             val false_= newName "false_"
             val tmp_reg = newName "tmp_reg"
             val loop_header = [ Mips.LABEL (loop_beg)
@@ -673,21 +669,21 @@ structure CodeGen = struct
                               , Mips.BGEZ (tmp_reg, loop_end) ]
 
             (* map is 'arr[i] = f(old_arr[i])'. *)
-            val loop_map0 =
+            val loop_filter0 =
                 case getElemSize elem_type of
                     One => Mips.LB(res_reg, elem_reg, "0")
                            :: applyFunArg(farg, [res_reg], vtable, res_reg, pos)
                   | Four => Mips.LW(res_reg, elem_reg, "0")
                             :: applyFunArg(farg, [res_reg], vtable, res_reg, pos)
 
-            val loop_map1 =
+            val loop_filter1 =
                 case getElemSize elem_type of
                     One =>  [  Mips.BEQ(res_reg, "0" ,false_)
-                             , Mips.LB (test_reg, elem_reg, "0")
-                             , Mips.SB (test_reg, addr_reg, "0")]
+                             , Mips.LB (value_reg, elem_reg, "0")
+                             , Mips.SB (value_reg, addr_reg, "0")]
                   | Four => [  Mips.BEQ(res_reg, "0" ,false_)
-                             , Mips.LW (test_reg, elem_reg, "0")
-                             , Mips.SW (test_reg, addr_reg, "0")]
+                             , Mips.LW (value_reg, elem_reg, "0")
+                             , Mips.SW (value_reg, addr_reg, "0")]
 
             val loop_footer =
                 [ Mips.ADDI (addr_reg, addr_reg,
@@ -706,8 +702,8 @@ structure CodeGen = struct
            @ dynalloc (size_reg, place, elem_type)
            @ init_regs
            @ loop_header
-           @ loop_map0
-           @ loop_map1
+           @ loop_filter0
+           @ loop_filter1
            @ loop_footer
         end
 
