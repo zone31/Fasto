@@ -356,6 +356,14 @@ and checkFunArg (In.FunName fname, vtab, ftab, pos) =
         constructing an appropriate In.FunDec and passing it to
         checkFunWithVtable, then constructing an Out.Lambda from the
         result. *)
+  | checkFunArg (In.Lambda (tp, params, expr, pos), vtab, ftab, callpos) =
+    let val infdec  = In.FunDec ("123_lambda", tp, params, expr, pos)
+        val Out.FunDec (str, tp', params', expr', pos') =
+              checkFunWithVtable(infdec, vtab, ftab, callpos)
+
+        val paramtps = map (fn _ => tp) params (* This is wrong!!! *)
+
+    in  (Out.Lambda (tp', params', expr', pos'), tp', paramtps) end
 
 (* Check a function declaration, but using a given vtable rather
 than an empty one. *)
