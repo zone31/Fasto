@@ -849,6 +849,15 @@ structure CodeGen = struct
   and applyFunArg (FunName s, args, vtable, place, pos) : Mips.Prog =
       let val tmp_reg = newName "tmp_reg"
       in  applyRegs(s, args, tmp_reg, pos) @ [Mips.MOVE(place, tmp_reg)] end
+
+    | applyFunArg (Lambda (tp, paralist, exp, _) , args, vtable, place, pos) = raise Error ("Implementer Lambda!", pos)
+
+    (*Mips.Prog =
+      let val tmp_reg = newName "tmp_reg"
+          val compiledFun = compileFun("Lambda" , paralist , exp ,pos)
+      in applyRegs("lambda", paralist, tmp_reg, pos) @ [Mips.MOVE(place, tmp_reg)]   end *)
+
+
      (* TODO TASK 3:
         Add case for Lambda.  This is very similar to how function
         definitions work.  You need to bind the parameters of the
