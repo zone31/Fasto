@@ -108,12 +108,6 @@ fun evalRelop ( bop, IntVal n1,     IntVal n2,     pos ) =
   | evalRelop ( bop, e1, e2, pos ) =
     invalidOperands [(Int, Int), (Bool, Bool), (Char, Char)] e1 e2 pos
 
-fun evalAnd (BoolVal e1, BoolVal e2, pos) = BoolVal (e1 andalso e2)
-  | evalAnd (e1, e2, pos) = raise Error("&& expects bool operands", pos)
-
-fun evalOr (BoolVal e1, BoolVal e2, pos) = BoolVal (e1 orelse e2)
-  | evalOr (e1, e2, pos) = raise Error("|| expects bool operands", pos)
-
 (* Index into an array. Check that the index is not out of bounds. *)
 fun applyIndexing( ArrayVal(lst, tp), IntVal ind, pos ) =
         let val len = List.length(lst)
@@ -221,14 +215,28 @@ fun evalExp ( Constant (v,_), vtab, ftab ) = v
 
   | evalExp ( And(e1, e2, pos), vtab, ftab ) =
         let val r1 = evalExp(e1, vtab, ftab)
-            val r2 = evalExp(e2, vtab, ftab)
-        in evalAnd(r1, r2, pos)
+        in case r1 of
+           BoolVal b1 => if b1 then
+                          let val r2 = evalExp(e2, vtab, ftab)
+                          in case r2 of
+                             BoolVal b2 => BoolVal b2
+                           | otherwise  => raise Error ("And expect boolval", pos)
+                          end
+                         else BoolVal b1
+         | otherwise  => raise Error ("And expect boolval", pos)
         end
 
   | evalExp ( Or(e1, e2, pos), vtab, ftab ) =
         let val r1 = evalExp(e1, vtab, ftab)
-            val r2 = evalExp(e2, vtab, ftab)
-        in evalOr(r1, r2, pos)
+        in case r1 of
+           BoolVal b1 => if not b1 then
+                          let val r2 = evalExp(e2, vtab, ftab)
+                          in case r2 of
+                             BoolVal b2 => BoolVal b2
+                           | otherwise  => raise Error ("Or expect boolval", pos)
+                          end
+                         else BoolVal b1
+         | otherwise  => raise Error ("Or expect boolval", pos)
         end
 
   | evalExp ( Not(e1, pos), vtab, ftab ) =
