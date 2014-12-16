@@ -714,23 +714,42 @@ structure CodeGen = struct
           val comp_size = [ Mips.ADDI (new_size, size_reg, "1") ]
           val neu_code  = compileExp acc_exp vtable neu_el
 
-          val set_r_w   = [ Mips.ADDI (elreadreg, arr_reg, "4")
-                          , Mips.ADDI (elwritreg, place, "8") ]
+          val set_r_w   = case getElemSize tp of
+                            One  => [ Mips.ADDI (elreadreg, arr_reg, "4")
+                                    , Mips.ADDI (elwritreg, place, "5") ]
+                          | Four => [ Mips.ADDI (elreadreg, arr_reg, "4")
+                                    , Mips.ADDI (elwritreg, place, "8") ]
 
-          val whileinit = [ Mips.LI (i_reg, "0")
-                          , Mips.SW (neu_el, place, "4") ]
+          val whileinit = case getElemSize tp of
+                            One  => [ Mips.LI (i_reg, "0")
+                                    , Mips.SB (neu_el, place, "4") ]
+                          | Four => [ Mips.LI (i_reg, "0")
+                                    , Mips.SW (neu_el, place, "4") ]
+
           val whilecond = [ Mips.LABEL startlabl
                           , Mips.SLT (tmp_reg, i_reg, size_reg)
                           , Mips.BEQ (tmp_reg, "0", endlabl) ]
-          val whileloop = [ Mips.LW (res_reg, elreadreg, "0")
-                          , Mips.LW (tmp_reg, elwritreg, "-4") ]
-                          @ applyFunArg(farg, [tmp_reg, res_reg], vtable,
-                                        res_reg, pos)
-                          @ [ Mips.SW (res_reg, elwritreg, "0")
-                          , Mips.ADDI (elreadreg, elreadreg, "4")
-                          , Mips.ADDI (elwritreg, elwritreg, "4")
-                          , Mips.ADDI (i_reg, i_reg, "1")
-                          , Mips.J startlabl ]
+
+          val whileloop = case getElemSize tp of
+                            One  => [ Mips.LB (res_reg, elreadreg, "0")
+                                    , Mips.LB (tmp_reg, elwritreg, "-1") ]
+                                    @ applyFunArg(farg, [tmp_reg, res_reg],
+                                                  vtable, res_reg, pos)
+                                    @ [ Mips.SB (res_reg, elwritreg, "0")
+                                    , Mips.ADDI (elreadreg, elreadreg, "1")
+                                    , Mips.ADDI (elwritreg, elwritreg, "1")
+                                    , Mips.ADDI (i_reg, i_reg, "1")
+                                    , Mips.J startlabl ]
+                          | Four => [ Mips.LW (res_reg, elreadreg, "0")
+                                    , Mips.LW (tmp_reg, elwritreg, "-4") ]
+                                    @ applyFunArg(farg, [tmp_reg, res_reg],
+                                                  vtable, res_reg, pos)
+                                    @ [ Mips.SW (res_reg, elwritreg, "0")
+                                    , Mips.ADDI (elreadreg, elreadreg, "4")
+                                    , Mips.ADDI (elwritreg, elwritreg, "4")
+                                    , Mips.ADDI (i_reg, i_reg, "1")
+                                    , Mips.J startlabl ]
+
           val while_end = [ Mips.LABEL endlabl ]
 
       in arr_code  @ (* Compute input array expr. *)
