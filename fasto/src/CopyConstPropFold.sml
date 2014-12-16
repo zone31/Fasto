@@ -13,6 +13,15 @@ open Fasto.KnownTypes
 datatype Propagatee = ConstProp of Value
                     | VarProp of string
 
+fun expPropagatee (Var (varname, _)) = SOME (VarProp varname)
+  | expPropagatee (Constant (value, _)) = SOME (ConstProp value)
+  | expPropagatee _ = NONE
+
+fun bindExpPropagatee name e vtable =
+    case expPropagatee e of
+        NONE => SymTab.remove name vtable
+      | SOME prop => SymTab.bind name prop vtable
+
 fun copyConstPropFoldExp vtable e =
     case e of
         Constant x => Constant x
@@ -20,13 +29,17 @@ fun copyConstPropFoldExp vtable e =
       | ArrayLit (es, t, pos) =>
         ArrayLit (map (copyConstPropFoldExp vtable) es, t, pos)
       | Var (name, pos) =>
-
+        let val name = name
+            val pos = pos
+        in case (SymTab.lookup name vtable) of
+            SOME (VarProp newname) => Var (newname, pos)
+          | SOME (ConstProp value) => Constant (value, pos)
+          | _                      => Var (name, pos)
+        end
         (* TODO TASK 4: This case currently does nothing.
 
          You must perform a lookup in the symbol table and if you find
          a Propagatee, return either a new Var or Constant node. *)
-
-        Var (name, pos)
       | Plus (e1, e2, pos) =>
         let val e1' = copyConstPropFoldExp vtable e1
             val e2' = copyConstPropFoldExp vtable e2
@@ -157,20 +170,17 @@ fun copyConstPropFoldExp vtable e =
       | Apply (fname, es, pos) =>
         Apply (fname, map (copyConstPropFoldExp vtable) es, pos)
       | Let (Dec (name, e, decpos), body, pos) =>
-
+        let val e' = copyConstPropFoldExp vtable e
+            val vtable' = bindExpPropagatee name e' vtable
+            val body' = copyConstPropFoldExp vtable' body
+        in Let (Dec (name, e', decpos), body', pos)
+        end
         (* TODO TASK 4: This case currently does nothing.
 
          You must extend this case to expand the vtable' with whatever
          Propagatee that you can get out of e'.  That is, inspect e'
          to see whether it is a constant or variable, and if so,
          insert the appropriate Propagatee value in vtable. *)
-
-        let val e' = copyConstPropFoldExp vtable e
-            val vtable' = vtable
-        in Let (Dec (name, e', decpos),
-                copyConstPropFoldExp vtable' body,
-                pos)
-        end
       | Index (name, e, t, pos) =>
         let val e' = copyConstPropFoldExp vtable e
         in (* We can only copy-propagate variables for indexing. *)
