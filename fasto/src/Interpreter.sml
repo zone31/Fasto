@@ -220,10 +220,10 @@ fun evalExp ( Constant (v,_), vtab, ftab ) = v
         end
 
   | evalExp ( And(e1, e2, pos), vtab, ftab ) =
-        let val r1 = (evalExp(e1, vtab, ftab))
+        let val r1 = evalExp(e1, vtab, ftab)
         in case r1 of
            BoolVal b1 => if b1 then
-                          let val r2 = (evalExp(e2, vtab, ftab))
+                          let val r2 = evalExp(e2, vtab, ftab)
                           in case r2 of
                              BoolVal b2 => BoolVal b2
                            | otherwise  => raise Error ("And expect boolval", pos)
@@ -234,8 +234,15 @@ fun evalExp ( Constant (v,_), vtab, ftab ) = v
 
   | evalExp ( Or(e1, e2, pos), vtab, ftab ) =
         let val r1 = evalExp(e1, vtab, ftab)
-            val r2 = evalExp(e2, vtab, ftab)
-        in evalOr(r1, r2, pos)
+        in case r1 of
+           BoolVal b1 => if not b1 then
+                          let val r2 = evalExp(e2, vtab, ftab)
+                          in case r2 of
+                             BoolVal b2 => BoolVal b2
+                           | otherwise  => raise Error ("Or expect boolval", pos)
+                          end
+                         else BoolVal b1
+         | otherwise  => raise Error ("Or expect boolval", pos)
         end
 
   | evalExp ( Not(e1, pos), vtab, ftab ) =
