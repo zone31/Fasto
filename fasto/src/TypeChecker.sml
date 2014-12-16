@@ -357,7 +357,7 @@ and checkFunArg (In.FunName fname, vtab, ftab, pos) =
         checkFunWithVtable, then constructing an Out.Lambda from the
         result. *)
   | checkFunArg (In.Lambda (tp, params, expr, pos), vtab, ftab, callpos) =
-    let val infdec  = In.FunDec ("123_lambda", tp, params, expr, pos)
+    let val infdec  = In.FunDec ("lambda", tp, params, expr, pos)
         val Out.FunDec (str, tp', params', expr', pos') =
               checkFunWithVtable(infdec, vtab, ftab, callpos)
         val paramtps = map (fn Param (str, tp) => tp) params
