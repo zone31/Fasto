@@ -219,9 +219,6 @@ fun evalExp ( Constant (v,_), vtab, ftab ) = v
         in  evalRelop(op <, r1, r2, pos)   (* > *)
         end
 
-(*        fun evalAnd (BoolVal e1, BoolVal e2, pos) = BoolVal (e1 andalso e2)
-          | evalAnd (e1, e2, pos) = raise Error("&& expects bool operands", pos)*)
-
   | evalExp ( And(e1, e2, pos), vtab, ftab ) =
         let val r1 = (evalExp(e1, vtab, ftab))
         in case r1 of
@@ -233,12 +230,6 @@ fun evalExp ( Constant (v,_), vtab, ftab ) = v
                           end
                          else BoolVal b1
          | otherwise  => raise Error ("And expect boolval", pos)
-        end
-
-  | evalExp ( And(e1, e2, pos), vtab, ftab ) =
-        let val r1 = evalExp(e1, vtab, ftab)
-            val r2 = evalExp(e2, vtab, ftab)
-        in evalAnd(r1, r2, pos)
         end
 
   | evalExp ( Or(e1, e2, pos), vtab, ftab ) =
