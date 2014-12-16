@@ -642,56 +642,68 @@ structure CodeGen = struct
            @ loop_footer
         end
 
-     | Filter(farg, arr_exp, elem_type, pos) =>
+    | Filter (farg, arr_exp, elem_type, pos) =>
         let val size_reg = newName "size_reg" (* size of input/output array *)
             val arr_reg  = newName "arr_reg" (* address of array *)
             val elem_reg = newName "elem_reg" (* address of single element *)
             val res_reg = newName "res_reg"
             val arr_code = compileExp arr_exp vtable arr_reg
-            val bool_reg = newName "bool_reg"
+
             val get_size = [ Mips.LW (size_reg, arr_reg, "0") ]
 
             val addr_reg = newName "addr_reg" (* address of element in new array *)
-            val i_reg = newName "i_reg"
-            val j_reg = newName "j_reg"
-            val init_regs = [ Mips.MOVE (i_reg, "0"),
-                              Mips.MOVE (j_reg, "0")
+            val i_reg = newName "i_reg" (*amount of progress of iteration in input array*)
+            val j_reg = newName "j_reg" (*Count of true elements in output*)
+            val init_regs = [ Mips.ADDI (addr_reg, place, "4")
+                            , Mips.MOVE (i_reg, "0")
+                            , Mips.MOVE (j_reg, "0")
                             , Mips.ADDI (elem_reg, arr_reg, "4") ]
 
             val loop_beg = newName "loop_beg"
             val loop_end = newName "loop_end"
-            val false_label1 = newName "false_label1"
+            val value_reg = newName "value_reg"
+            val false_= newName "false_"
             val tmp_reg = newName "tmp_reg"
             val loop_header = [ Mips.LABEL (loop_beg)
                               , Mips.SUB (tmp_reg, i_reg, size_reg)
                               , Mips.BGEZ (tmp_reg, loop_end) ]
 
             (* map is 'arr[i] = f(old_arr[i])'. *)
-            val loop_map0 =
+            val loop_filter0 =
                 case getElemSize elem_type of
                     One => Mips.LB(res_reg, elem_reg, "0")
-                           :: applyFunArg(farg, [res_reg], vtable, bool_reg, pos)
-                           @ [ Mips.ADDI(elem_reg, elem_reg, "1") ]
+                           :: applyFunArg(farg, [res_reg], vtable, res_reg, pos)
                   | Four => Mips.LW(res_reg, elem_reg, "0")
-                            :: applyFunArg(farg, [res_reg], vtable, bool_reg, pos)
-                            @ [ Mips.ADDI(elem_reg, elem_reg, "4") ]
-            val loop_map1 =
-                [ Mips.BEQ (bool_reg,"0", false_label1 )
-                , Mips.ADDI (j_reg,j_reg ,"1")
-                , Mips.LABEL false_label1
-                ]
+                            :: applyFunArg(farg, [res_reg], vtable, res_reg, pos)
+
+            val loop_filter1 =
+                case getElemSize elem_type of
+                    One =>  [  Mips.BEQ(res_reg, "0" ,false_)
+                             , Mips.LB (value_reg, elem_reg, "0")
+                             , Mips.SB (value_reg, addr_reg, "0")]
+                  | Four => [  Mips.BEQ(res_reg, "0" ,false_)
+                             , Mips.LW (value_reg, elem_reg, "0")
+                             , Mips.SW (value_reg, addr_reg, "0")]
 
             val loop_footer =
-                [ Mips.ADDI (i_reg, i_reg, "1")
+                [ Mips.ADDI (addr_reg, addr_reg,
+                             makeConst (elemSizeToInt (getElemSize elem_type)))
+                , Mips.ADDI (j_reg, j_reg, "1")
+                , Mips.LABEL false_
+                , Mips.ADDI(elem_reg, elem_reg,
+                             makeConst (elemSizeToInt (getElemSize elem_type)))
+                , Mips.ADDI (i_reg, i_reg, "1")
                 , Mips.J loop_beg
                 , Mips.LABEL loop_end
+                , Mips.SW (j_reg, place, "0")
                 ]
         in arr_code
            @ get_size
+           @ dynalloc (size_reg, place, elem_type)
            @ init_regs
            @ loop_header
-           @ loop_map0
-           @ loop_map1
+           @ loop_filter0
+           @ loop_filter1
            @ loop_footer
         end
 
