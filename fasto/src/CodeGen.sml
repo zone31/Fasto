@@ -839,11 +839,24 @@ structure CodeGen = struct
       in  applyRegs(s, args, tmp_reg, pos) @ [Mips.MOVE(place, tmp_reg)] end
 
     | applyFunArg (Lambda (tp, paralist, exp, _), args, vtable, place, pos) =
-      (*let val tmp_reg = newName "tmp_reg"
-          val body    = compileExp exp
-      in applyRegs("123_lambda", args, tmp_reg, pos)
-       @*)
-      raise Error ("Implementer Lambda!", pos)
+      let val tmp_reg = newName "tmp_reg"
+          val lambda = newName "lambda"
+          val input = exp
+          val (argsInit,vtable2)=getArgs paralist vtable minReg
+          val vtableU = SymTab.combine vtable2 vtable
+      in
+
+
+
+         applyRegs(lambda, args, tmp_reg, pos)
+
+
+        @ compileExp exp vtableU tmp_reg
+        @ argsInit
+        @ [Mips.MOVE(place, lambda), Mips.LABEL lambda]
+      end
+
+      (*raise Error ("Implementer Lambda!", pos)*)
 
     (*Mips.Prog =
       let val tmp_reg = newName "tmp_reg"
@@ -874,7 +887,7 @@ structure CodeGen = struct
         end
 
   (* code for saving and restoring callee-saves registers *)
-  fun stackSave currentReg maxReg savecode restorecode offset =
+  and stackSave currentReg maxReg savecode restorecode offset =
     if currentReg > maxReg
     then (savecode, restorecode, offset)  (* done *)
     else stackSave (currentReg+1)
