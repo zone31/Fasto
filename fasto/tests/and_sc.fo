@@ -1,0 +1,5 @@
+fun int main() =
+    let a = {true, false, true, true, true, false} in
+        if false && a[100] // Array index out of bounds
+        then write(1)
+        else write(0)

@@ -1,0 +1,5 @@
+fun int main() =
+    let a = {true, true, false, true} in
+        if true || a[100] // Array index out of bounds
+        then 0
+        else 1
