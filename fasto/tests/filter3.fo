@@ -1,0 +1,8 @@
+fun bool negator(bool n) = not n
+
+fun bool writeBool(bool n) = write(n)
+
+fun [bool] main() =
+  let a = filter(negator, {true, true , false, true, false, true}) in
+  map(writeBool, a)
+
