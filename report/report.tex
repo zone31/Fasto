@@ -342,5 +342,67 @@ and evalFunArg (FunName fid, vtab, ftab, callpos) =
     in (fn aargs => callFunWithVtable(fexp, aargs, vtab, ftab, pcall), tp)
     end
     \end{lstlisting}
-
+    
+    \section{Copy propagation and constant folding}
+	For our implementation of the optimizations copy propagration and constant
+	folding, we have made additions to \texttt{CopyConstPropFold.sml}, specifically
+	we have added cases for variables, \texttt{let}-bindings, multplication,
+	division, logical and/or, logical negation and integer negation in function
+	\texttt{copyConstPropFoldExp}.
+	\subsection{Multiplication}
+	Our implementation of the case for multiplication is based on the simplifications
+	given for constant folding of multiplication expressions given in \texttt{GroupProj14.pdf}.
+	They are as follows, here \texttt{e1'} and \texttt{e2'} are the recursively optimized
+	subexpressions, found in a multiplication expression: $ \texttt{e1'} \ast \texttt{e2'}$ 
+	\begin{itemize}
+	\item if \texttt{e1'} and \texttt{e2'} are constant values then the result will be the
+			multiplication value,
+	\item if \texttt{e1'} (\texttt{e2'}) is value \texttt{1} then the result is \texttt{e2'}
+			(\texttt{e1'}) because $\texttt{1} \ast \texttt{e2'} = \texttt{e1'}$,
+	\item if \texttt{e1'} (\texttt{e2'}) is value \texttt{0} then the result is constant value
+			\texttt{0} because $\texttt{0} \ast \texttt{e2'} = \texttt{0}$,
+	\item otherwise the optimsed result is  \texttt{Times (e1', e2', pos)}.
+	\end{itemize}
+	Based on this we have implemented our optimization case for multiplication expressions like this:
+	\begin{lstlisting}
+      | Times (e1, e2, pos) =>
+        let val e1' = copyConstPropFoldExp vtable e1
+            val e2' = copyConstPropFoldExp vtable e2
+        in case (e1', e2') of
+               (Constant (IntVal x, _), Constant (IntVal y, _)) =>
+               Constant (IntVal (x*y), pos)
+             | (Constant (IntVal 0, _), _) =>
+               Constant (IntVal 0, pos)
+             | (_, Constant (IntVal 0, _)) =>
+               Constant (IntVal 0, pos)
+             | (Constant (IntVal 1, _), _) =>
+               e2'
+             | (_, Constant (IntVal 1, _)) =>
+               e1'
+             | _ =>
+               Times (e1', e2', pos)
+        end
+	\end{lstlisting}
+	First the subexpressions, \texttt{e1} and \texttt{e2}, of the multiplication expression are
+	optimized, and put respectively in variables \texttt{e1'} and \texttt{e2'}.
+	Then the cases described above are run through. A similar rationale have been applied to the
+	implementation of the cases for division, logical and/or, logical negation and integer negation.
+	Their implementation can be seen in appendix ?.
+	\subsection{Variables}
+	For variables we have implemented the following:
+	\begin{lstlisting}
+      | Var (name, pos) =>
+        let val name = name
+            val pos = pos
+        in case (SymTab.lookup name vtable) of
+            SOME (VarProp newname) => Var (newname, pos)
+          | SOME (ConstProp value) => Constant (value, pos)
+          | _                      => Var (name, pos)
+        end
+	\end{lstlisting}
+	First the given variable is looked up in the \texttt{vtable}. If a new variable name is returned, our
+	variable is thus just a copy of that variable, and we return the new variable, i.e copy propagation. If
+	on the other hand a constant value is returned, we return that constant, i.e constant propagation.
+	Otherwise our variable is returned as it is, i.e no propagation occurs.
+	\subsection{\texttt{let}-bindings}
 \end{document}
