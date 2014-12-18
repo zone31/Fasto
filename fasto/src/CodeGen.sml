@@ -851,6 +851,70 @@ structure CodeGen = struct
       in  applyRegs(s, args, tmp_reg, pos) @ [Mips.MOVE(place, tmp_reg)] end
 
     | applyFunArg (Lambda (tp, paralist, exp, _), args, vtable, place, pos) =
+      let val lambda = newName "lambda"
+          val temp_reg = newName "temp_reg"
+
+          fun ptest (Param (paramName,paramType)::vs) = [newName paramName^"test param"] @ ptest vs
+            | ptest [] = []
+
+          fun ctest (x::vs) = [Param (newName x,Int)] @ ctest vs
+            | ctest [] = []
+
+
+          val argsPara = (ctest args) @ paralist
+
+          val argsParaTest = args @ ptest paralist
+
+          val (argsInit,vtable2)=getArgs argsPara vtable minReg
+
+          val vtableU = SymTab.combine vtable2 vtable
+
+          val compiledFun = compileFun(FunDec (lambda, tp , argsPara , exp ,pos) )
+
+          val compiledExp = compileExp exp vtable2 temp_reg
+
+          val appliedRegs = applyRegs(lambda, argsParaTest, temp_reg, pos)
+
+      in
+          argsInit
+        @ compiledExp
+        @ [Mips.MOVE(place, lambda)]
+      end
+
+
+
+
+(*
+let val tmp_reg = newName "tmp_reg_test"
+          val lambda = newName "lambda"
+          val testName = newName "TestTestTestTestTest"
+          fun ptest (Param (paramName,paramType)::vs) = [newName paramName^"test param"] @ ptest vs
+            | ptest [] = []
+          val argsPara = (ptest paralist) @ args
+          val (argsInit,vtable2)=getArgs paralist vtable minReg
+          val vtableU = SymTab.combine vtable2 vtable
+          val compiledFun = compileFun(FunDec (lambda, tp , paralist , exp ,pos) )
+          val test3 = compileExp exp vtable2 lambda
+
+      in
+
+
+
+
+
+
+         argsInit
+        @ test3
+        @ [Mips.MOVE(place, lambda)]
+      end
+
+*)
+
+
+
+
+
+(*
       let val tmp_reg = newName "tmp_reg"
           val lambda = newName "lambda"
           val input = exp
@@ -863,10 +927,10 @@ structure CodeGen = struct
          applyRegs(lambda, args, tmp_reg, pos)
 
 
-        @ compileExp exp vtableU tmp_reg
         @ argsInit
+        @ compileExp exp vtableU tmp_reg
         @ [Mips.MOVE(place, lambda), Mips.LABEL lambda]
-      end
+      end *)
 
       (*raise Error ("Implementer Lambda!", pos)*)
 
