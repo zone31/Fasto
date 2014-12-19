@@ -353,7 +353,7 @@ and evalFunArg (FunName fid, vtab, ftab, callpos) =
 	Our implementation of the case for multiplication is based on the simplifications
 	given for constant folding of multiplication expressions given in \texttt{GroupProj14.pdf}.
 	They are as follows, here \texttt{e1'} and \texttt{e2'} are the recursively optimized
-	subexpressions, found in a multiplication expression: $ \texttt{e1'} \ast \texttt{e2'}$ 
+	subexpressions, found in a multiplication expression: $ \texttt{e1} \ast \texttt{e2}$ 
 	\begin{itemize}
 	\item if \texttt{e1'} and \texttt{e2'} are constant values then the result will be the
 			multiplication value,
@@ -405,4 +405,30 @@ and evalFunArg (FunName fid, vtab, ftab, callpos) =
 	on the other hand a constant value is returned, we return that constant, i.e constant propagation.
 	Otherwise our variable is returned as it is, i.e no propagation occurs.
 	\subsection{\texttt{let}-bindings}
+	We use the term propagatee throughout this part. A propagatee is a variable's defining expression. The
+	defining expression of a variable is defined to be either a constant value, or another variable. Below is
+	our code for \texttt{let}-bindings. Generally this case detects propagatees in the
+	\texttt{let}-binding expression and binds them to the vtable. It also optimizes the expression and the
+	body of the \texttt{let}-binding.
+	\begin{lstlisting}
+      | Let (Dec (name, e, decpos), body, pos) =>
+        let val e' = copyConstPropFoldExp vtable e
+            val vtable' = bindExpPropagatee name e' vtable
+            val body' = copyConstPropFoldExp vtable' body
+        in Let (Dec (name, e', decpos), body', pos)
+        end
+	\end{lstlisting}
+	Propagatees are detected and bound to the vtable, by calling function \texttt{bindExpPropagatee} on the optimized expression
+	\texttt{e'}and the \texttt{vtable}. \texttt{bindExpPropagatee} calls another function \texttt{expPropagatee}, which extracts
+	an propagatee from a given expression. If some propagatee is returned from \texttt{expPropagatee}, it is bound to the vtable.
+	\begin{lstlisting}
+fun expPropagatee (Var (varname, _)) = SOME (VarProp varname)
+  | expPropagatee (Constant (value, _)) = SOME (ConstProp value)
+  | expPropagatee _ = NONE	
+	
+fun bindExpPropagatee name e vtable =
+    case expPropagatee e of
+        NONE => SymTab.remove name vtable
+      | SOME prop => SymTab.bind name prop vtable
+	\end{lstlisting}
 \end{document}
