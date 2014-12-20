@@ -3,5 +3,7 @@ fun bool main() =
     let x1 = write(~3 / 2 == ~2) in
     let x2 =  write(3 /~2 == ~2) in
     let x3 = write(~3 /~2 ==  1) in
-    let x4 = write(~(5+5) ==  ~10) in 
+    let x4 = write(~(5+5) ==  ~10) in
+    let x5 = write(~(5+5)) in
+    let x5 = write(~(1)) in
     write(x0 && x1 && x2 && x3 && x4)
