@@ -513,6 +513,8 @@ and evalFunArg (FunName fid, vtab, ftab, callpos) =
       | SOME f => (fn aargs => callFun(f, aargs, ftab, callpos), getFunRTP f)
     end
   | evalFunArg (Lambda (tp, paralist, exp, pos), vtab, ftab, pcall) =
+
+
     let val fexp = FunDec ("lambda", tp, paralist, exp, pos)
     in (fn aargs => callFunWithVtable(fexp, aargs, vtab, ftab, pcall), tp)
     end

@@ -2,8 +2,9 @@ fun int writeInt(int x) = write(x)
 
 fun int main() =
     let a = {{1, 2, 3, 4}, {1, 2, 3}, {1, 2}, {1}} in
-    let b = reduce(fn int (int a, int b) => a + b, 0,
+    let b = reduce(fn int (int b, int c) => b + c, 0,
               map(fn int ([int] arr) =>
-                reduce(fn int (int a, int b) => a + b, 0, arr), a))
+                reduce(fn int (int d, int e) => d + e, 0, arr), a))
                 in
     writeInt(b)
+
