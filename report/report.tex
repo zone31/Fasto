@@ -55,6 +55,10 @@
 
     \newpage
 
+    \tableofcontents
+
+    \newpage
+
     \pagenumbering{arabic} % Arabic page numbers (and reset to 1)
 
     \section{Task 1 - Warmup}
@@ -95,8 +99,7 @@
 %left NOT
 %left DEQ LTH
 %left PLUS MINUS
-%left TIMES
-%left DIVIDE
+%left TIMES DIVIDE
 %left NEG
     \end{lstlisting}
 
@@ -199,40 +202,53 @@ Exp :     NUM                 { Constant (IntVal (#1 $1), #2 $1) }
     is evaluated like,
 
     \begin{lstlisting}[basicstyle=\small]
-        (2 + 4 == 6) || ((5 + 8 == 10) && (8 < 10)).
+        ((2 + 4) == 6) || (((5 + 8) == 10) && (8 < 10)).
     \end{lstlisting}
 
     Notice that the \texttt{\&\&} operator is also evaluated before the
     \texttt{||} operator. \\
 
     After this we implemented the operators in the interpreter.  Here we created
-    two new functions \texttt{evalAnd} and \texttt{evalOr} which evaluated and
-    and or operations and returned an error if the expression to the left or
-    right of the operators didn't return a boolean value.
+    a case for \texttt{and} and a case for \texttt{or}.  We had to implement
+    them as short circuited which means that the right hand side of an
+    \texttt{and} should only be evaluated if the left hand side is true.
+    Similarly for \texttt{or} the right hand side should only be evaluated if
+    the left hand side is false (The or implementation can be seen in appendix
+    \ref{interpreter_and_and_or}.
 
     \begin{lstlisting}[basicstyle=\small]
-fun evalAnd (BoolVal e1, BoolVal e2, pos) = BoolVal (e1 andalso e2)
-  | evalAnd (e1, e2, pos) = raise Error("&& expects bool operands", pos)
+| evalExp ( And(e1, e2, pos), vtab, ftab ) =
+      let val r1 = evalExp(e1, vtab, ftab)
+      in case r1 of
+         BoolVal b1 => if b1 then
+                        let val r2 = evalExp(e2, vtab, ftab)
+                        in case r2 of
+                           BoolVal b2 => BoolVal b2
+                         | otherwise  => raise Error ("And expect boolval", pos)
+                        end
+                       else BoolVal b1
+       | otherwise  => raise Error ("And expect boolval", pos)
+      end
 
-fun evalOr (BoolVal e1, BoolVal e2, pos) = BoolVal (e1 orelse e2)
-  | evalOr (e1, e2, pos) = raise Error("|| expects bool operands", pos)
     \end{lstlisting}
 
-    We evaluated the expressions to the left and right of the operator and then
-    called the helper functions afterwards. \\
+    We first evaluate the lefthand expression, if that is true we evaluate the
+    right hand expression, if that is also true we return True otherwise we
+    return false.  If either of the expressions isn't a BoolVal, we report an
+    error. \\
 
-    In the code generator it was required that we implemented the boolean
-    operators to be short-circuiting so that the right hand side of an and only
-    evaluates if the left hand side is true. Similarly the right hand side of an
-    or evaluates only if the left hand side is false.  We did this with the MIPS
-    assembly code,
+    In the code generator it was also required that we implemented the boolean
+    operators to be short-circuiting so that the right hand side of an
+    \texttt{and} only evaluates if the left hand side is true.  Similarly the
+    right hand side of an \texttt{or} evaluates only if the left hand side is
+    false.  We did this with the MIPS assembly code,
 
     \begin{lstlisting}[basicstyle=\small]
-;; Code computing the left hand side of an and, and saving result to $t1
+$t1 = compile e1
 
 beq $t1, $zero, False
 
-;; Code computing the right hand side of an and, and saving the result to $t2
+$t2 = compile e2
 
 beq $t2, $zero, False
 li  $s1, 1 ;; Assuming the result should be saved to $s1
@@ -244,9 +260,121 @@ False:
 End:
     \end{lstlisting}
 
-    It can be seen that if the first part of an and return false i.e. the
-    result register contains 0, we simply skip over the execution of the right
-    hand side and jump strait to False.  We did something similar for or's.
+    It can be seen that if the first part of an \texttt{and} return false i.e.
+    the result register contains 0, we simply skip over the execution of the
+    right hand side and jump strait to False.  We did something similar for
+    \texttt{or}'s.  The Standard ML code generating the MIPS assembly for both
+    \texttt{and} and \texttt{or} can be seen in appendix
+    \ref{code_gen_and_and_or}.
+
+    \subsection{Boolean Negation}
+    In the lexer we implemented the operator for boolean negation \texttt{not}
+    as a keyword.  We did this because \texttt{not} is a valid variable name and
+    would pass the rule,
+
+    \begin{lstlisting}[basicstyle=\small]
+| [`a`-`z` `A`-`Z`] [`a`-`z` `A`-`Z` `0`-`9` `_`]*
+                      { keyword (getLexeme lexbuf,getPos lexbuf) }.
+    \end{lstlisting}
+
+    If we didn't implement a keyword, \texttt{not} would simply fall through and
+    go in the case,
+
+    \begin{lstlisting}
+| _              => Parser.ID (s, pos)
+    \end{lstlisting}
+
+    in the \texttt{keyword} function.  The implemented keyword goes to a
+    \texttt{Parser.NOT} in the parser and carries only the position.
+
+    \begin{lstlisting}[basicstyle=\small]
+fun keyword (s, pos) =
+    case s of
+         "if"           => Parser.IF pos
+       | "then"         => Parser.THEN pos
+
+       (...)
+
+       | "not"          => Parser.NOT pos
+       | "fn"           => Parser.LAMBDA pos
+       | _              => Parser.ID (s, pos)
+}
+    \end{lstlisting}
+
+    In the interpreter \texttt{not} is implemented simply by evaluating the
+    expression after the \texttt{not}.  If that expression results in a true,
+    false is returned, if it results in a false, true is returned and otherwise
+    an error is reported.  The code can be seen in appendix
+    \ref{interpreter_not}. \\
+
+    \texttt{not} is implemented in the code generator as a branch operation.  If
+    \texttt{not} is applied to true 3 operations are performed, if it is applied
+    to false only 2 operations are performed.  The code generating MIPS assembly
+    can be found in appendix \ref{code_gen_not}.
+
+    \subsection{Integer Negation}
+    Integer negation has been implemented two places in the lexer.  For integer
+    constants which is negated the negated value is simply created on
+    compiletime.  This is done by the rule,
+
+    \begin{lstlisting}[basicstyle=\small]
+| [`0`-`9`]+ | "~" [`0`-`9`]+ { case Int.fromString (getLexeme lexbuf) of
+                             NONE   => lexerError lexbuf "Bad integer"
+                           | SOME i => Parser.NUM (i, getPos lexbuf) }
+    \end{lstlisting}
+
+    which says that a number or a tilde followed by a one or more numbers is a
+    Parser.NUM in the parser and the integer value is carried with it. \\
+
+    If a tilde is not followed by a number for example in,
+
+    \begin{lstlisting}
+~(2 + 4) - ~(2 - ~f(3))
+    \end{lstlisting}
+
+    the negation is caught by the rule,
+
+    \begin{lstlisting}
+| "~"                 { Parser.NEG      (getPos lexbuf) }
+    \end{lstlisting}
+
+    In the code generator the negations is performed as a exclusive or and an
+    addition.
+
+    \begin{lstlisting}[basicstyle=\small]
+| Negate (e, pos) =>
+    let val negThis  = newName "negThis"
+        val code     = compileExp e vtable negThis
+        val negation =
+            [Mips.XORI(negThis,negThis,"-1")] @ [Mips.ADDI (place,negThis,"1")]
+    in code @ negation
+    end
+    \end{lstlisting}
+
+    This works because computers use two's complement to express numbers.  In
+    two's complement the negation of a number is computed by flipping all bits
+    in the number and adding 1.  We flip all bits by exclusive or'ring with -1,
+    the binary value of -1 is 1111 1111.  Therefore all the places where there
+    was 0 in the original number there will now be 1 and where there were 1
+    there will now be 0.  After that we simply add 1 with \texttt{addi} and save
+    the result to place.
+
+    \subsection{Boolean Literals}
+    The boolean literals is implemented in the lexer as a keyword that carries a
+    boolean value to the parser.  The implementation of boolean literals in all
+    compiler phases can be found in appendix \ref{boolean_implementation}.
+
+    \subsection{Test}
+    \begin{tabular}{|c|c|}
+        \hline
+        \textbf{Test name} & \textbf{Test description}                      \\
+        \hline
+        andOr.fo           & Tests boolean operators and their precedence.  \\
+                           & This test fails if the precedence is wrong or  \\
+                           & evaluation is wrong                            \\
+        \hline
+
+    \end{tabular}
 
     \section{Task 2 - Implement \texttt{filter} and \texttt{scan}}
     \subsection{Typerules}
@@ -488,4 +616,140 @@ fun bindExpPropagatee name e vtable =
         NONE => SymTab.remove name vtable
       | SOME prop => SymTab.bind name prop vtable
 	\end{lstlisting}
+
+    This refers to \ref{app_title}
+
+    \newpage
+    \appendix
+    \section{Interpreter AND and OR} \label{interpreter_and_and_or}
+    \begin{lstlisting}[basicstyle=\small]
+| evalExp ( And(e1, e2, pos), vtab, ftab ) =
+      let val r1 = evalExp(e1, vtab, ftab)
+      in case r1 of
+         BoolVal b1 => if b1 then
+                        let val r2 = evalExp(e2, vtab, ftab)
+                        in case r2 of
+                           BoolVal b2 => BoolVal b2
+                         | otherwise  => raise Error ("And expect boolval", pos)
+                        end
+                       else BoolVal b1
+       | otherwise  => raise Error ("And expect boolval", pos)
+      end
+
+| evalExp ( Or(e1, e2, pos), vtab, ftab ) =
+      let val r1 = evalExp(e1, vtab, ftab)
+      in case r1 of
+         BoolVal b1 => if not b1 then
+                        let val r2 = evalExp(e2, vtab, ftab)
+                        in case r2 of
+                           BoolVal b2 => BoolVal b2
+                         | otherwise  => raise Error ("Or expect boolval", pos)
+                        end
+                       else BoolVal b1
+       | otherwise  => raise Error ("Or expect boolval", pos)
+      end
+    \end{lstlisting}
+
+    \newpage
+    \section{Code Generator AND and OR} \label{code_gen_and_and_or}
+    \begin{lstlisting}[basicstyle=\small]
+| And (e1, e2, pos) =>
+    let val falseLabel = newName "falseLabel"
+        val endLabel   = newName "endLabel"
+        val t1         = newName "and_L"
+        val t2         = newName "and_R"
+        val code1      = compileExp e1 vtable t1
+        val code2      = compileExp e2 vtable t2
+    in code1                            @
+       [Mips.BEQ (t1, "0", falseLabel)] @
+       code2                            @
+       [Mips.BEQ (t2, "0", falseLabel)] @
+       [Mips.LI (place, "1")]           @
+       [Mips.J endLabel]                @
+       [Mips.LABEL falseLabel]          @
+       [Mips.LI (place, "0")]           @
+       [Mips.LABEL endLabel]
+     end
+| Or (e1, e2, pos) =>
+    let val trueLabel = newName "trueLabel"
+        val endLabel  = newName "endLabel"
+        val t1        = newName "or_L"
+        val t2        = newName "or_R"
+        val code1     = compileExp e1 vtable t1
+        val code2     = compileExp e2 vtable t2
+    in code1                           @
+       [Mips.BNE (t1, "0", trueLabel)] @
+       code2                           @
+       [Mips.BNE (t2, "0", trueLabel)] @
+       [Mips.LI (place, "0")]          @
+       [Mips.J endLabel]               @
+       [Mips.LABEL trueLabel]          @
+       [Mips.LI (place, "1")]          @
+       [Mips.LABEL endLabel]
+    end
+    \end{lstlisting}
+
+    \newpage
+    \section{Interpreter NOT} \label{interpreter_not}
+    \begin{lstlisting}[basicstyle=\small]
+| evalExp ( Not(e1, pos), vtab, ftab ) =
+      let val r1 = evalExp(e1, vtab, ftab)
+      in case r1 of
+          BoolVal true  => BoolVal false
+        | BoolVal false => BoolVal true
+        | other         => raise Error("Not expects a boolean value", pos)
+      end
+    \end{lstlisting}
+
+    \newpage
+    \section{Code Generation NOT} \label{code_gen_not}
+    \begin{lstlisting}[basicstyle=\small]
+| Not (e1, pos) =>
+    let val zeroLabel = newName "zeroLabel"
+        val endLabel  = newName "endLabel"
+        val t1        = newName "not_R"
+        val code      = compileExp e1 vtable t1
+    in code                            @
+       [Mips.BEQ (t1, "0", zeroLabel)] @
+       [Mips.XOR (place, t1, t1)]      @
+       [Mips.J endLabel]               @
+       [Mips.LABEL zeroLabel]          @
+       [Mips.LI (place, "1")]          @
+       [Mips.LABEL endLabel]
+    end
+    \end{lstlisting}
+
+    \newpage
+    \section{Boolean Implementation} \label{boolean_implementation}
+    \subsection{Lexer}
+    \begin{lstlisting}[basicstyle=\small]
+| "true"         => Parser.BOOLLIT (true, pos)
+| "false"        => Parser.BOOLLIT (false, pos)
+    \end{lstlisting}
+
+    \subsection{Parser}
+    \begin{lstlisting}[basicstyle=\small]
+(...)
+%token <bool*(int*int)> BOOLLIT
+(...)
+| BOOLLIT             { Constant (BoolVal (#1 $1), #2 $1) }
+    \end{lstlisting}
+
+    \subsection{Interpreter}
+    \begin{lstlisting}[basicstyle=\small]
+fun evalExp ( Constant (v,_), vtab, ftab ) = v
+    \end{lstlisting}
+
+    \subsection{typechecker}
+    \begin{lstlisting}[basicstyle=\small]
+In.Constant  (v, pos)     => (valueType v, Out.Constant (v, pos))
+    \end{lstlisting}
+
+    \subsection{Code Generation}
+    \begin{lstlisting}[basicstyle=\small]
+| Constant (BoolVal b, pos) => if b
+                               then [Mips.LI (place, "1")]
+                               else [Mips.LI (place, "0")]
+    \end{lstlisting}
+
 \end{document}
