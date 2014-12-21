@@ -364,6 +364,18 @@ fun keyword (s, pos) =
     boolean value to the parser.  The implementation of boolean literals in all
     compiler phases can be found in appendix \ref{boolean_implementation}.
 
+    \subsection{Test}
+    \begin{tabular}{|c|c|}
+        \hline
+        \textbf{Test name} & \textbf{Test description}                      \\
+        \hline
+        andOr.fo           & Tests boolean operators and their precedence.  \\
+                           & This test fails if the precedence is wrong or  \\
+                           & evaluation is wrong                            \\
+        \hline
+
+    \end{tabular}
+
     \section{Task 2 - Implement \texttt{filter} and \texttt{scan}}
     \subsection{Typerules}
     The typerules for \texttt{filter} and \texttt{scan} have been based on the
