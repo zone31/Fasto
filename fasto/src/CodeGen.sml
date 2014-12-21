@@ -852,184 +852,23 @@ structure CodeGen = struct
     | applyFunArg (Lambda (tp, paralist, exp, _), args, vtable, place, pos) =
       let val lambda = newName "lambda"
 
-          fun sameNameConflict(str,vtable) = case SymTab.lookup str vtable of
-                                             NONE  => false
-                                            |SOME X=> true
-
-          val argsparalist = map(fn Param(x,y) => if sameNameConflict(x,vtable) then newName x else x) paralist
-
-          val bind = zipWith Mips.MOVE argsparalist args
+          val argsparalist = map (fn Param(x,y) => x) paralist
 
           val zipped = zipWith (fn (x,y)=>(x,y)) argsparalist args
 
-          val n_symtab = SymTab.empty()
+          val bind = zipWith Mips.MOVE argsparalist args
 
-          val n_symtab = foldl(fn ((x,y),acc)=>SymTab.bind x y acc) n_symtab zipped
+          val localVtable = SymTab.empty()
 
-          val vtableComb = SymTab.combine vtable n_symtab
+          val localVtable = foldl(fn ((x,y),acc)=>SymTab.bind x y acc) localVtable zipped
 
-          val compiledExp = compileExp exp vtableComb lambda
-
-
-
+          val compiledExp = compileExp exp localVtable lambda
 
       in []
         @ bind
         @ compiledExp
         @ [Mips.MOVE(place, lambda)]
-
       end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-(*      let val lambda = newName "lambda"
-          val temp_reg = newName "temp_reg"
-
-          fun ptest (Param (paramName,_)::vs) = [paramName] @ ptest vs
-            | ptest [] = []
-
-          fun ctest (x::vs) = [Param (x,Int)] @ ctest vs
-            | ctest [] = []
-
-          fun paramprint (Param (paramName,paramType)::vs) = paramName ^ " " ^ paramprint vs
-            | paramprint      [] = " :param"
-
-          fun argsprint (x::vs) = x ^ " " ^ argsprint vs
-            | argsprint      [] = " :args "
-
-          fun vtableprint (x::vs) = x ^ " " ^ vtableprint vs
-            | vtableprint      [] = " :vtable "
-
-          val argsPara = (ctest args) @ paralist
-
-          val abc = ptest(paralist)
-          val testzip = zipWith Mips.MOVE args abc*)
-
-          (*val testzip2 = zipWith Mips.MOVE args abc*)
-(*
-          val argsParaTest = args @ ptest paralist
-
-          val (argsInit,vtable2)=getArgs argsPara vtable minReg
-
-          val vtableU = SymTab.combine vtable2 vtable
-
-          val compiledFun = compileFun(FunDec (lambda, tp , argsPara , exp ,pos) )
-
-          val compiledExp = compileExp exp vtable2 temp_reg*)
-
-          (*val godammit = raise Error (paramprint paralist ^ "|" ^ paramprint argsPara, pos)*)
-
-         (* val appliedRegs = applyRegs(lambda, argsParaTest, temp_reg, pos)
-          val randomName1 = newName "Random Label 1"
-          val randomName2 = newName "Random Label 2"
-          val randomName3 = newName "Random Label 3"
-          val randomName4 = newName "Random Label 4"
-          val randomName5 = newName "Random Label 5"
-
-
-      in []
-        @ [Mips.LABEL randomName1]
-        @ argsInit
-        @ testzip
-        @ compiledExp
-        @ [Mips.MOVE(place, temp_reg)]
-
-      end
-*)
-
-
-
-(*
-let val tmp_reg = newName "tmp_reg_test"
-          val lambda = newName "lambda"
-          val testName = newName "TestTestTestTestTest"
-          fun ptest (Param (paramName,paramType)::vs) = [newName paramName^"test param"] @ ptest vs
-            | ptest [] = []
-          val argsPara = (ptest paralist) @ args
-          val (argsInit,vtable2)=getArgs paralist vtable minReg
-          val vtableU = SymTab.combine vtable2 vtable
-          val compiledFun = compileFun(FunDec (lambda, tp , paralist , exp ,pos) )
-          val test3 = compileExp exp vtable2 lambda
-
-      in
-
-
-
-
-
-
-         argsInit
-        @ test3
-        @ [Mips.MOVE(place, lambda)]
-      end
-
-*)
-
-
-
-
-
-(*
-      let val tmp_reg = newName "tmp_reg"
-          val lambda = newName "lambda"
-          val input = exp
-          val (argsInit,vtable2)=getArgs paralist vtable minReg
-          val vtableU = SymTab.combine vtable2 vtable
-      in
-
-
-
-         applyRegs(lambda, args, tmp_reg, pos)
-
-
-        @ argsInit
-        @ compileExp exp vtableU tmp_reg
-        @ [Mips.MOVE(place, lambda), Mips.LABEL lambda]
-      end *)
-
-      (*raise Error ("Implementer Lambda!", pos)*)
-
-    (*Mips.Prog =
-      let val tmp_reg = newName "tmp_reg"
-          val compiledFun = compileFun("Lambda" , paralist , exp ,pos)
-      in applyRegs("lambda", paralist, tmp_reg, pos) @ [Mips.MOVE(place, tmp_reg)]   end *)
-
 
      (* TODO TASK 3:
         Add case for Lambda.  This is very similar to how function
