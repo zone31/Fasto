@@ -25,8 +25,7 @@ open Fasto.UnknownTypes
 %left NOT
 %left DEQ LTH
 %left PLUS MINUS
-%left TIMES
-%left DIVIDE
+%left TIMES DIVIDE
 %left NEG
 
 %start Prog
