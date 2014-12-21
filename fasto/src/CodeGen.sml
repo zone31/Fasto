@@ -282,12 +282,11 @@ structure CodeGen = struct
         end
 
     | Negate (e, pos) =>
-        let val negThis = newName "negThis"
-            val neg1    = newName "neg1"
-            val code    = compileExp e vtable negThis
-        in code @
-           [Mips.LI (neg1, "-1")] @
-           [Mips.MUL (place, neg1, negThis)]
+        let val negThis  = newName "negThis"
+            val code     = compileExp e vtable negThis
+            val negation =
+                [Mips.XORI(negThis,negThis,"-1")] @ [Mips.ADDI (place,negThis,"1")]
+        in code @ negation
         end
 
 (********************************************************************)
@@ -851,6 +850,83 @@ structure CodeGen = struct
       in  applyRegs(s, args, tmp_reg, pos) @ [Mips.MOVE(place, tmp_reg)] end
 
     | applyFunArg (Lambda (tp, paralist, exp, _), args, vtable, place, pos) =
+      let (*val lambda = newName "lambda"*)
+          val temp_reg = newName "temp_reg"
+
+          fun ptest (Param (paramName,paramType)::vs) = [paramName] @ ptest vs
+            | ptest [] = []
+
+          fun ctest (x::vs) = [Param (x,Int)] @ ctest vs
+            | ctest [] = []
+
+          fun paramprint (Param (paramName,paramType)::vs) = paramName ^ " " ^ paramprint vs
+            | paramprint      [] = " :param"
+
+          fun argsprint (x::vs) = x ^ " " ^ argsprint vs
+            | argsprint      [] = " :args"
+
+          fun vtableprint (x::vs) = x ^ " " ^ vtableprint vs
+            | vtableprint      [] = " :vtable"
+
+          val argsPara = (ctest args) @ paralist
+
+          val abc = ptest(paralist)
+          val testzip = zipWith Mips.MOVE args abc
+
+          val argsParaTest = args @ ptest paralist
+
+          val (argsInit,vtable2)=getArgs argsPara vtable minReg
+
+          val vtableU = SymTab.combine vtable2 vtable
+
+          (*val compiledFun = compileFun(FunDec (lambda, tp , argsPara , exp ,pos) )*)
+
+          val compiledExp = compileExp exp vtable2 temp_reg
+
+          (*val godammit = raise Error (vtableprint vtableU, pos)*)
+
+          (*val appliedRegs = applyRegs(lambda, argsParaTest, temp_reg, pos)*)
+
+      in []
+        @ testzip
+        @ compiledExp
+        @ [Mips.MOVE(place, temp_reg)]
+      end
+
+
+
+
+(*
+let val tmp_reg = newName "tmp_reg_test"
+          val lambda = newName "lambda"
+          val testName = newName "TestTestTestTestTest"
+          fun ptest (Param (paramName,paramType)::vs) = [newName paramName^"test param"] @ ptest vs
+            | ptest [] = []
+          val argsPara = (ptest paralist) @ args
+          val (argsInit,vtable2)=getArgs paralist vtable minReg
+          val vtableU = SymTab.combine vtable2 vtable
+          val compiledFun = compileFun(FunDec (lambda, tp , paralist , exp ,pos) )
+          val test3 = compileExp exp vtable2 lambda
+
+      in
+
+
+
+
+
+
+         argsInit
+        @ test3
+        @ [Mips.MOVE(place, lambda)]
+      end
+
+*)
+
+
+
+
+
+(*
       let val tmp_reg = newName "tmp_reg"
           val lambda = newName "lambda"
           val input = exp
@@ -863,10 +939,10 @@ structure CodeGen = struct
          applyRegs(lambda, args, tmp_reg, pos)
 
 
-        @ compileExp exp vtableU tmp_reg
         @ argsInit
+        @ compileExp exp vtableU tmp_reg
         @ [Mips.MOVE(place, lambda), Mips.LABEL lambda]
-      end
+      end *)
 
       (*raise Error ("Implementer Lambda!", pos)*)
 
