@@ -33,7 +33,7 @@ signature SymTab = sig
     val combine : 'a SymTab -> 'a SymTab -> 'a SymTab
 
     (* Create a symbol table from a list of name-value pairs.
-       
+
        In case of duplicates, the bindings are shadowed in reverse order from
        the head of the list. That is, the active binding will ne the one
        closest to the head of the list. *)
