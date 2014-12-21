@@ -358,7 +358,7 @@ and evalFunArg (FunName fid, vtab, ftab, callpos) =
 	Our implementation of the case for multiplication is based on the simplifications
 	given for constant folding of multiplication expressions given in \texttt{GroupProj14.pdf}.
 	They are as follows, here \texttt{e1'} and \texttt{e2'} are the recursively optimized
-	subexpressions, found in a multiplication expression: $ \texttt{e1} \ast \texttt{e2}$
+	subexpressions, found in a multiplication expression: $ \texttt{e1} \ast \texttt{e2}$ 
 	\begin{itemize}
 	\item if \texttt{e1'} and \texttt{e2'} are constant values then the result will be the
 			multiplication value,
@@ -391,8 +391,60 @@ and evalFunArg (FunName fid, vtab, ftab, callpos) =
 	First the subexpressions, \texttt{e1} and \texttt{e2}, of the multiplication expression are
 	optimized, and put respectively in variables \texttt{e1'} and \texttt{e2'}.
 	Then the cases described above are run through. A similar rationale have been applied to the
-	implementation of the cases for division, logical and/or, logical negation and integer negation.
-	Their implementation can be seen in appendix ?.
+	implementation of the case for division. The implementation can be seen in appendix \ref{CopyConstPropFold}.
+	\subsection{Logical and}
+	For the case of logical and, we have made the following simplificatons, and based our implementation
+	on these. Again \texttt{e1'} and \texttt{e2'} are the recursively optimized subexpressions:
+	\begin{itemize}
+	\item if \texttt{e1'} and \texttt{e2'} are bool values of true, then the result will
+		  be a bool of value true,
+	\item if \texttt{e1'} (\texttt{e2'}) is false, then the result will be a bool of value false
+	\item otherwise the optimsed result is  \texttt{And (e1', e2', pos)}.
+	\end{itemize}
+	Based on this, we have implemented the case for logical and, in the following way:
+	\begin{lstlisting}
+      | And (e1, e2, pos) =>
+        let val e1' = copyConstPropFoldExp vtable e1
+            val e2' = copyConstPropFoldExp vtable e2
+        in case (e1', e2') of
+               (Constant (BoolVal true, _), Constant (BoolVal true, _)) =>
+               Constant (BoolVal true, pos)
+             | (Constant (BoolVal false, _), _) =>
+               Constant (BoolVal false, pos)
+             | (_, Constant (BoolVal false, _)) =>
+               Constant (BoolVal false, pos)
+             | _ =>
+              And (e1', e2', pos)
+        end	
+	\end{lstlisting}
+	First the subexpressions \texttt{e1} and \texttt{e2}, found in the and-expression, are
+	optimized, and put respectively in variables \texttt{e1'} and \texttt{e2'}. The cases descriped above
+	are then run through. Our implementation of logical or follows a similar rationale, and can be found in
+	appendix \ref{CopyConstPropFold}.
+	\subsection{Logical not}
+	As with multiplication and logical and, we have made some simplifications describing the
+	constant folding on logical not, they are as follows:
+	\begin{itemize}
+	\item if \texttt{e1'} is true then return false,
+	\item if \texttt{e1'} is false then return true,
+	\item otherwise the optimsed result is  \texttt{Not (e1', pos)}.
+	\end{itemize}
+	Our implementation has been based on these simplification, it is found below:
+	\begin{lstlisting}
+      | Not (e1, pos) =>
+        let val e1' = copyConstPropFoldExp vtable e1
+        in case (e1') of
+               Constant (BoolVal true, _) =>
+               Constant (BoolVal false, pos)
+             | Constant (BoolVal false, _) =>
+               Constant (BoolVal true, pos)
+             | _ =>
+               Not (e1', pos)
+        end
+	\end{lstlisting}	
+	First \texttt{e1} is recursively optimised, and put in \texttt{e1'}. The described cases are
+	then run through. Our implementation of integer negation follows a similar rationale, and can
+	be found in appenddix \ref{CopyConstPropFold}.
 	\subsection{Variables}
 	For variables we have implemented the following:
 	\begin{lstlisting}
