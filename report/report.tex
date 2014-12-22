@@ -669,7 +669,7 @@ and applyFunArg (FunName s, args, vtable, place, pos) : Mips.Prog =
 	\item otherwise the optimsed result is  \texttt{Times (e1', e2', pos)}.
 	\end{itemize}
 	Based on this we have implemented our optimization case for multiplication expressions like this:
-	\begin{lstlisting}
+	\begin{lstlisting}[basicstyle=\small]
       | Times (e1, e2, pos) =>
         let val e1' = copyConstPropFoldExp vtable e1
             val e2' = copyConstPropFoldExp vtable e2
@@ -691,7 +691,7 @@ and applyFunArg (FunName s, args, vtable, place, pos) : Mips.Prog =
 	First the subexpressions, \texttt{e1} and \texttt{e2}, of the multiplication expression are
 	optimized, and put respectively in variables \texttt{e1'} and \texttt{e2'}.
 	Then the cases described above are run through. A similar rationale have been applied to the
-	implementation of the case for division. The implementation can be seen in appendix \ref{CopyConstPropFold}.
+	implementation of the case for division. The implementation can be seen in appendix \ref{ccpfdiv}.
 	\subsection{Logical and}
 	For the case of logical and, we have made the following simplificatons, and based our implementation
 	on these. Again \texttt{e1'} and \texttt{e2'} are the recursively optimized subexpressions:
@@ -701,7 +701,7 @@ and applyFunArg (FunName s, args, vtable, place, pos) : Mips.Prog =
 	\item otherwise the optimsed result is  \texttt{And (e1', e2', pos)}.
 	\end{itemize}
 	Based on this, we have implemented the case for logical and, in the following way:
-	\begin{lstlisting}
+	\begin{lstlisting}[basicstyle=\small]
       | And (e1, e2, pos) =>
         let val e1' = copyConstPropFoldExp vtable e1
             val e2' = copyConstPropFoldExp vtable e2
@@ -715,7 +715,7 @@ and applyFunArg (FunName s, args, vtable, place, pos) : Mips.Prog =
 	First the subexpressions \texttt{e1} and \texttt{e2}, found in the and-expression, are
 	optimized, and put respectively in variables \texttt{e1'} and \texttt{e2'}. The cases descriped above
 	are then run through. Our implementation of logical or follows a similar rationale, and can be found in
-	appendix \ref{CopyConstPropFold}.
+	appendix \ref{ccpfor}.
 	\subsection{Logical not}
 	As with multiplication and logical and, we have made some simplifications describing the
 	constant folding on logical not, they are as follows:
@@ -725,7 +725,7 @@ and applyFunArg (FunName s, args, vtable, place, pos) : Mips.Prog =
 	\item otherwise the optimsed result is  \texttt{Not (e1', pos)}.
 	\end{itemize}
 	Our implementation has been based on these simplification, it is found below:
-	\begin{lstlisting}
+	\begin{lstlisting}[basicstyle=\small]
       | Not (e1, pos) =>
         let val e1' = copyConstPropFoldExp vtable e1
         in case (e1') of
@@ -739,10 +739,10 @@ and applyFunArg (FunName s, args, vtable, place, pos) : Mips.Prog =
 	\end{lstlisting}
 	First \texttt{e1} is recursively optimised, and put in \texttt{e1'}. The described cases are
 	then run through. Our implementation of integer negation follows a similar rationale, and can
-	be found in appenddix \ref{CopyConstPropFold}.
+	be found in appenddix \ref{ccpfneg}.
 	\subsection{Variables}
 	For variables we have implemented the following:
-	\begin{lstlisting}
+	\begin{lstlisting}[basicstyle=\small]
       | Var (name, pos) =>
         let val name = name
             val pos = pos
@@ -756,13 +756,13 @@ and applyFunArg (FunName s, args, vtable, place, pos) : Mips.Prog =
 	variable is thus just a copy of that variable, and we return the new variable, i.e copy propagation. If
 	on the other hand a constant value is returned, we return that constant, i.e constant propagation.
 	Otherwise our variable is returned as it is, i.e no propagation occurs.
-	\subsection{\texttt{let}-bindings}
+	\subsection{let-bindings}
 	We use the term propagatee throughout this part. A propagatee is a variable's defining expression. The
 	defining expression of a variable is defined to be either a constant value, or another variable. Below is
 	our code for \texttt{let}-bindings. Generally this case detects propagatees in the
 	\texttt{let}-binding expression and binds them to the vtable. It also optimizes the expression and the
 	body of the \texttt{let}-binding.
-	\begin{lstlisting}
+	\begin{lstlisting}[basicstyle=\small]
       | Let (Dec (name, e, decpos), body, pos) =>
         let val e' = copyConstPropFoldExp vtable e
             val vtable' = bindExpPropagatee name e' vtable
@@ -773,7 +773,7 @@ and applyFunArg (FunName s, args, vtable, place, pos) : Mips.Prog =
 	Propagatees are detected and bound to the vtable, by calling function \texttt{bindExpPropagatee} on the optimized expression
 	\texttt{e'}and the \texttt{vtable}. \texttt{bindExpPropagatee} calls another function \texttt{expPropagatee}, which extracts
 	an propagatee from a given expression. If some propagatee is returned from \texttt{expPropagatee}, it is bound to the vtable.
-	\begin{lstlisting}
+	\begin{lstlisting}[basicstyle=\small]
 fun expPropagatee (Var (varname, _)) = SOME (VarProp varname)
   | expPropagatee (Constant (value, _)) = SOME (ConstProp value)
   | expPropagatee _ = NONE
@@ -799,7 +799,6 @@ fun int main() =
         let y = 2 in
         (x + 2) * (y - 2) in
     b
-
 	\end{lstlisting}
 	\end{minipage}%
 	\begin{minipage}{.1\textwidth}
@@ -844,8 +843,65 @@ fun int main() =
 	\end{lstlisting}
 	\end{minipage}
 	\end{center}
-	Here the dead variables, \texttt{x} and \texttt{y}, have also been removed. \\
-    This refers to \ref{app_title}
+	Here the dead variables, \texttt{x} and \texttt{y}, have also been removed. Below we run another test \texttt{2optim.fo},
+	with \texttt{-p c}. \\
+	\begin{center}
+	\begin{minipage}{.5\textwidth}
+	\begin{lstlisting}
+fun int main() =  
+    let a = 4 / 2 in    
+    let b = 4 * 4 in    
+    let c = a * b in    
+    let d = b * b / a in    
+    let e = ~((2 - 5)) in    
+    let f = e / a * b in
+    a
+	\end{lstlisting}
+	\end{minipage}%
+	\begin{minipage}{.1\textwidth}
+	$\rightarrow$
+	\end{minipage}%
+	\begin{minipage}{.4\textwidth}
+	\begin{lstlisting}
+fun int main() =  
+    let a = 2 in    
+    let b = 16 in    
+    let c = 32 in    
+    let d = 128 in    
+    let e = 3 in    
+    let f = 16 in
+    2
+	\end{lstlisting}
+	\end{minipage}
+	\end{center}	
+	It is clear that the appropriate optimizations have taken place. Below we run a new test \texttt{3optim.fo}, again with \texttt{-p c}.
+	\begin{center}
+	\begin{minipage}{.5\textwidth}
+	\begin{lstlisting}
+fun bool main() =  
+    let a = 
+        let x = true in        
+        let y = not(x) in        
+        let z = x && y in
+        z || y in
+    a
+	\end{lstlisting}
+	\end{minipage}%
+	\begin{minipage}{.1\textwidth}
+	$\rightarrow$
+	\end{minipage}%
+	\begin{minipage}{.4\textwidth}
+	\begin{lstlisting}
+    let a = 
+        let x = true in        
+        let y = false in        
+        let z = false in
+        false in
+    a
+	\end{lstlisting}
+	\end{minipage}
+	\end{center}
+	Again it is clear that the appropriate optimizations have taken place.
 
     \newpage
     \appendix
@@ -979,7 +1035,131 @@ In.Constant  (v, pos)     => (valueType v, Out.Constant (v, pos))
                                then [Mips.LI (place, "1")]
                                else [Mips.LI (place, "0")]
     \end{lstlisting}
+	
+	\section{CopyConstPropFold} \label{CopyConstPropFold}
+	\begin{lstlisting}[basicstyle=\small]
+fun expPropagatee (Var (varname, _)) = SOME (VarProp varname)
+  | expPropagatee (Constant (value, _)) = SOME (ConstProp value)
+  | expPropagatee (_) = NONE
 
+fun bindExpPropagatee name e vtable =
+    case expPropagatee e of
+        NONE => SymTab.remove name vtable
+      | SOME prop => SymTab.bind name prop vtable
+	\end{lstlisting}
+	\subsection{copyConstPropFoldExp} \label{copyConstPropFoldExp}
+	\subsubsection{Var} \label{ccpfvar}
+	\begin{lstlisting}[basicstyle=\small]
+      | Var (name, pos) =>
+        let val name = name
+            val pos = pos
+        in case (SymTab.lookup name vtable) of
+            SOME (VarProp newname) => Var (newname, pos)
+          | SOME (ConstProp value) => Constant (value, pos)
+          | _                      => Var (name, pos)
+        end
+    \end{lstlisting}
+    
+    \subsubsection{Let} \label{ccpflet}
+    \begin{lstlisting}[basicstyle=\small]
+      | Let (Dec (name, e, decpos), body, pos) =>
+        let val e' = copyConstPropFoldExp vtable e
+            val vtable' = bindExpPropagatee name e' vtable
+            val body' = copyConstPropFoldExp vtable' body
+          in Let (Dec (name, e', decpos), body', pos)
+        end
+    \end{lstlisting}
+    
+    \subsubsection{Times} \label{ccpftimes}
+    \begin{lstlisting}[basicstyle=\small]
+      | Times (e1, e2, pos) =>
+        let val e1' = copyConstPropFoldExp vtable e1
+            val e2' = copyConstPropFoldExp vtable e2
+        in case (e1', e2') of
+               (Constant (IntVal x, _), Constant (IntVal y, _)) =>
+               Constant (IntVal (x*y), pos)
+             | (Constant (IntVal 0, _), _) =>
+               Constant (IntVal 0, pos)
+             | (_, Constant (IntVal 0, _)) =>
+               Constant (IntVal 0, pos)
+             | (Constant (IntVal 1, _), _) =>
+               e2'
+             | (_, Constant (IntVal 1, _)) =>
+               e1'
+             | _ =>
+               Times (e1', e2', pos)
+        end   
+    \end{lstlisting}
+    
+    \subsubsection{Divide} \label{ccpfdiv}
+    \begin{lstlisting}[basicstyle=\small]
+      | Divide (e1, e2, pos) =>
+        let val e1' = copyConstPropFoldExp vtable e1
+            val e2' = copyConstPropFoldExp vtable e2
+        in case (e1', e2') of
+               (Constant (IntVal x, _), Constant (IntVal y, _)) =>
+               Constant (IntVal  (Int.quot(x,y)), pos)
+             | (Constant (IntVal 0, _), _) =>
+               Constant (IntVal 0, pos)
+             | (_, Constant (IntVal 1, pos)) =>
+               e1'
+             | _ =>
+               Divide (e1', e2', pos)
+        end  
+    \end{lstlisting}
+    
+    \subsubsection{And} \label{ccpfand}
+    \begin{lstlisting}[basicstyle=\small]
+      | And (e1, e2, pos) =>
+        let val e1' = copyConstPropFoldExp vtable e1
+            val e2' = copyConstPropFoldExp vtable e2
+        in case (e1', e2') of
+               (Constant(BoolVal x,_),Constant(BoolVal y,_)) =>
+               Constant(BoolVal (x andalso y),pos)
+             | _ =>
+               And (e1', e2', pos)
+        end
+    \end{lstlisting}
+    
+    \subsubsection{Or} \label{ccpfor}
+    \begin{lstlisting}[basicstyle=\small]
+      | Or (e1, e2, pos) =>
+        let val e1' = copyConstPropFoldExp vtable e1
+            val e2' = copyConstPropFoldExp vtable e2
+        in case (e1', e2') of
+               (Constant(BoolVal x,_),Constant(BoolVal y,_)) =>
+               Constant(BoolVal (x orelse y),pos)
+             | _ =>
+               Or (e1', e2', pos)
+        end
+    \end{lstlisting}
+    
+    \subsubsection{Not} \label{ccpfnot}
+    \begin{lstlisting}[basicstyle=\small]
+      | Not (e1, pos) =>
+        let val e1' = copyConstPropFoldExp vtable e1
+        in case (e1') of
+               Constant (BoolVal true, _) =>
+               Constant (BoolVal false, pos)
+             | Constant (BoolVal false, _) =>
+               Constant (BoolVal true, pos)
+             | _ =>
+               Not (e1', pos)
+        end 
+    \end{lstlisting}
+    
+    \subsubsection{Integer negation} \label{ccpfneg}
+    \begin{lstlisting}[basicstyle=\small]
+      | Negate (e1, pos)=>
+        let val e1' = copyConstPropFoldExp vtable e1
+        in case (e1') of
+               Constant (IntVal v, _) =>
+               Constant (IntVal (~v), pos)
+             | _ =>
+               Negate(e1', pos)
+        end
+    \end{lstlisting}
+    
     \section{Task 1 Tests} \label{task_1_tests}
     \subsection{and\_err.fo}
     \begin{lstlisting}[basicstyle=\small]
@@ -1138,6 +1318,42 @@ fun bool main() =
     \subsection{or\_sc.fo}
     \begin{lstlisting}[basicstyle=\small]
 
+    \end{lstlisting}
+    
+    \section{Task 4 Tests}
+    
+    \subsection{1optim.fo}
+    \begin{lstlisting}[basicstyle=\small]
+fun int main() =
+    let a = read(int) in
+    let b =
+        let x = a in
+        let y = 2 in
+        (x + 2) * (y - 2) in
+    b
+    \end{lstlisting}
+    
+    \subsection{2optim.fo}
+    \begin{lstlisting}[basicstyle=\small]
+fun int main() =  
+    let a = 4 / 2 in    
+    let b = 4 * 4 in    
+    let c = a * b in    
+    let d = b * b / a in    
+    let e = ~((2 - 5)) in    
+    let f = e / a * b in
+    a
+    \end{lstlisting}
+    
+    \subsection{3optim.fo}
+    \begin{lstlisting}[basicstyle=\small]
+fun bool main() =  
+    let a = 
+        let x = true in        
+        let y = not(x) in        
+        let z = x && y in
+        z || y in
+    a
     \end{lstlisting}
 
 \end{document}
