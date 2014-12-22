@@ -524,9 +524,8 @@ and evalFunArg (FunName fid, vtab, ftab, callpos) =
 	For the case of logical and, we have made the following simplificatons, and based our implementation
 	on these. Again \texttt{e1'} and \texttt{e2'} are the recursively optimized subexpressions:
 	\begin{itemize}
-	\item if \texttt{e1'} and \texttt{e2'} are bool values of true, then the result will
-		  be a bool of value true,
-	\item if \texttt{e1'} (\texttt{e2'}) is false, then the result will be a bool of value false
+	\item if \texttt{e1'} and \texttt{e2'} are bools, then the result should be
+	\texttt{e1'} \texttt{and} \texttt{e2'}
 	\item otherwise the optimsed result is  \texttt{And (e1', e2', pos)}.
 	\end{itemize}
 	Based on this, we have implemented the case for logical and, in the following way:
@@ -535,15 +534,11 @@ and evalFunArg (FunName fid, vtab, ftab, callpos) =
         let val e1' = copyConstPropFoldExp vtable e1
             val e2' = copyConstPropFoldExp vtable e2
         in case (e1', e2') of
-               (Constant (BoolVal true, _), Constant (BoolVal true, _)) =>
-               Constant (BoolVal true, pos)
-             | (Constant (BoolVal false, _), _) =>
-               Constant (BoolVal false, pos)
-             | (_, Constant (BoolVal false, _)) =>
-               Constant (BoolVal false, pos)
+               (Constant(BoolVal x,_),Constant(BoolVal y,_)) =>
+               Constant(BoolVal (x andalso y),pos)
              | _ =>
-              And (e1', e2', pos)
-        end	
+               And (e1', e2', pos)
+        end
 	\end{lstlisting}
 	First the subexpressions \texttt{e1} and \texttt{e2}, found in the and-expression, are
 	optimized, and put respectively in variables \texttt{e1'} and \texttt{e2'}. The cases descriped above
@@ -616,7 +611,68 @@ fun bindExpPropagatee name e vtable =
         NONE => SymTab.remove name vtable
       | SOME prop => SymTab.bind name prop vtable
 	\end{lstlisting}
+	
+	\subsection{Tests}
+	We have tested out optimization implementations by using the commands: \\
+	$\backslash \texttt{bin}\backslash \texttt{fasto -p c testfile.fo}$ and
+	$\backslash \texttt{bin}\backslash \texttt{fasto -p testfile.fo}$. With \texttt{-p c}, we only test with the constant folding and
+	copy/constant propagation pass, whereas with just \texttt{-p}, we run the only set of optimizations. Our first example is found in \texttt{1optim.fo}, here we first test with \texttt{-p c}.\medskip\\
+	\begin{center}
+	\begin{minipage}{.5\textwidth}
+	\begin{lstlisting}
+fun int main() =  
+    let a = read(int) in    
+    let b = 
+        let x = a in        
+        let y = 2 in
+        (x + 2) * (y - 2) in
+    b
 
+	\end{lstlisting}
+	\end{minipage}%
+	\begin{minipage}{.1\textwidth}
+	$\rightarrow$
+	\end{minipage}%
+	\begin{minipage}{.4\textwidth}
+	\begin{lstlisting}
+fun int main() =  
+    let a = read(int) in    
+    let b = 
+        let x = a in        
+        let y = 2 in
+        0 in
+    b
+	\end{lstlisting}
+	\end{minipage}		
+	\end{center}
+	It is clear that the expression \texttt{(x + 2) $\ast$ (y - 2)} has been optimized to zero, as $\texttt{y = 2}$
+	and $\texttt{(y-2) = 0}$. Going further with \texttt{-p}, we get:
+	\begin{center}
+	\begin{minipage}{.5\textwidth}
+	\begin{lstlisting}
+fun int main() =  
+    let a = read(int) in    
+    let b = 
+        let x = a in        
+        let y = 2 in
+        (x + 2) * (y - 2) in
+    b
+
+	\end{lstlisting}
+	\end{minipage}%
+	\begin{minipage}{.1\textwidth}
+	$\rightarrow$
+	\end{minipage}%
+	\begin{minipage}{.4\textwidth}
+	\begin{lstlisting}
+fun int main() =  
+    let a = read(int) in    
+    let b = 0 in
+    b
+	\end{lstlisting}
+	\end{minipage}		
+	\end{center}
+	Here the dead variables, \texttt{x} and \texttt{y}, have also been removed. \\
     This refers to \ref{app_title}
 
     \newpage
