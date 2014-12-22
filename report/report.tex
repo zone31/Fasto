@@ -767,7 +767,7 @@ is by a list, where each step is followed by the next, in chronological order.
   We now generate a new vTable, that contains the local variables only. We foldl over the zipped
   variable we declared in 2. This creates a SymTab structure witch makes it a valid vtable.
  \item Merge local and global vtable\\
- This makes the expression able to see variables declared outside the scope  
+ This makes the expression able to see variables declared outside the scope
   \item Compile the expression from the lambda, via compileExp. It takes the merged vtable\\
   We can now compile the expression in the lambda. We have assigned the arguments, and made a
   local vTable so the function can reassign variables such as x, and a global, so to can call
@@ -783,7 +783,7 @@ and applyFunArg (FunName s, args, vtable, place, pos) : Mips.Prog =
   | applyFunArg (Lambda (tp, paralist, exp, _), args, vtable, place, pos) =
     let val lambda = newName "lambda"
         val argsparalist = map (fn Param(x,y) => x) paralist
-        val zipped = zipWith (fn (x,y)=>(x,y)) argsparalist args 
+        val zipped = zipWith (fn (x,y)=>(x,y)) argsparalist args
         val bind = zipWith Mips.MOVE argsparalist args
         val localVtable = foldl(fn ((x,y),acc)=>SymTab.bind x y acc) (SymTab.empty()) zipped
         val combinedVtable = SymTab.combine localVtable vtable
@@ -811,7 +811,7 @@ and applyFunArg (FunName s, args, vtable, place, pos) : Mips.Prog =
         lambda\_nested\_sameName.fo        & No variable conflicts, mo double decelerations       \\
         \hline
         lambda\_type\_err.fo     & Returns a type error, because lambda function has wrong type  \\
-       
+
         \hline
     \end{tabular}
 
@@ -840,7 +840,7 @@ and applyFunArg (FunName s, args, vtable, place, pos) : Mips.Prog =
 			(\texttt{e1'}) because $\texttt{1} \ast \texttt{e2'} = \texttt{e1'}$,
 	\item if \texttt{e1'} (\texttt{e2'}) is value \texttt{0} then the result is constant value
 			\texttt{0} because $\texttt{0} \ast \texttt{e2'} = \texttt{0}$,
-	\item otherwise the optimsed result is  \texttt{Times (e1', e2', pos)}.
+	\item otherwise the optimized result is  \texttt{Times (e1', e2', pos)}.
 	\end{itemize}
 	Based on this we have implemented our optimization case for multiplication expressions like this:
 	\begin{lstlisting}[basicstyle=\small]
@@ -1352,7 +1352,7 @@ fun bindExpPropagatee name e vtable =
                         pos)
         end
     \end{lstlisting}
-    
+
    	\subsubsection{Minus} \label{ccpfvar}
 	\begin{lstlisting}[basicstyle=\small]
       | Minus (e1, e2, pos) =>
@@ -1367,7 +1367,7 @@ fun bindExpPropagatee name e vtable =
                Minus (e1', e2', pos)
         end
     \end{lstlisting}
-    
+
     \newpage
     \section{Task 1 Tests} \label{task_1_tests}
     \subsection{and\_err.fo}
