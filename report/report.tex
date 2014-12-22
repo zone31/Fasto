@@ -530,25 +530,36 @@ is by a list, where each step is followed by the next, in chronological order.
   It takes in 2 lists of 2 different types, and a function. Then it iterates over the 2 lists,
   and uses each element of the input lists in the input. Then the function return is stored in
   a new list.  
-  \item Generate code that assings input from args to the parameter list.\\
+  \item Generate code that assigns input from args to the parameter list.\\
   We call zipWith again, but this time we generate a list of mips instructions. In this case
   move the assigned values into the correct registers, so the expression can use these
-  \item Generate the local vTable, that contains the local variables.
-  \item Compile the expression from the lambda, via compileExp. It takes the local vTable,
+  \item Generate the local vTable, that contains the local variables.\\
+  We now generate a new vTable, that contains the local variables only. We foldl over the zipped
+  variable we declared in 2. This creates a SymTab structure witch makes it a valid vtable.
+  \item Compile the expression from the lambda, via compileExp. It takes the local vTable,\\
+  We can now compile the expression in the lambda. We have assigned the arguments, and made a 
+  local vTable so the function can reassign variables such as x, without affecting the scope 
+  outside the function.
   and a register to place its result.
-  \item then we concatinate the code from 3 and 5, and returns this.
+  \item then we concatinate the code from 3 and 5, and returns this as a lambda call.
 \end{enumerate}
 The source code looks like this
-\lstinputlisting[
-language=ML,
-basicstyle=\footnotesize,
-caption={Lambda in CodeGen.sml },
-firstnumber=850,
-breaklines=true,
-linerange={850-865},
-numbers=left]
-{../fasto/src/CodeGen.sml}
-
+ \begin{lstlisting}[language=ML,basicstyle=\footnotesize,caption={Lambda in CodeGen.sml },firstnumber=850,breaklines=false,numbers=left]
+and applyFunArg (FunName s, args, vtable, place, pos) : Mips.Prog =
+    let val tmp_reg = newName "tmp_reg"
+    in  applyRegs(s, args, tmp_reg, pos) @ [Mips.MOVE(place, tmp_reg)] end
+| applyFunArg (Lambda (tp, paralist, exp, _), args, vtable, place, pos) =
+    let val lambda = newName "lambda"
+        val argsparalist = map (fn Param(x,y) => x) paralist 
+        val zipped = zipWith (fn (x,y)=>(x,y)) argsparalist args
+        val bind = zipWith Mips.MOVE argsparalist args
+        val localVtable = foldl(fn ((x,y),acc)=>SymTab.bind x y acc) (SymTab.empty()) zipped
+        val compiledExp = compileExp exp localVtable place
+    in []
+      @ bind
+      @ compiledExp
+    end
+\end{lstlisting}
 
 
     \section{Task 4 - Copy propagation and constant folding}
