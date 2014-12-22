@@ -17,6 +17,13 @@
 		\texttt{chr.salbaek@gmail.com}
 }
 
+
+\lstset{
+basicstyle=\footnotesize,
+breaklines=false,
+language=ML,
+numbers=left}
+
 \title{
     \vspace{3cm}
     \Huge{Compiler Design} \\
@@ -82,7 +89,7 @@
     \end{lstlisting}
 
     In the parser we added the tokens where addition and subtraction was already
-    defined, as integer multiplication and division has a lot in common with
+    defined, as integer multiplication and division has allot in common with
     addition and subtraction.  Integer multiplication and division carries two
     integers corresponding to a position in the code.
 
@@ -145,7 +152,7 @@ Exp :     NUM                 { Constant (IntVal (#1 $1), #2 $1) }
     We then implemented the operators in the typechecker.  Our cases call a
     helper function \texttt{checkBinOp} that takes a position, an expected type,
     and two expressions and check that the two expressions have the type of the
-    expected type.  If the types match, the types are returned with
+    expected type.  If the types match the types is returned with
     \textit{typedecorated} versions of the expressions, if the types doesn't
     match an error is raised. \\
     We then simply return the same operation, now with a return type.
@@ -192,7 +199,7 @@ Exp :     NUM                 { Constant (IntVal (#1 $1), #2 $1) }
     \subsection{Boolean Operators}
     We started by implementing the boolean operators in the lexer in a very
     similar way that we implemented multiplication and division.  In the parser,
-    we made sure that the boolean operators where defined as having a lower
+    we made sure that the boolean operators were defined as having a lower
     precedence than the arithmetic operators, so that an expression like,
 
     \begin{lstlisting}[basicstyle=\small]
@@ -262,7 +269,7 @@ End:
 
     It can be seen that if the first part of an \texttt{and} return false i.e.
     the result register contains 0, we simply skip over the execution of the
-    right hand side and jump straight to False.  We did something similar for
+    right hand side and jump strait to False.  We did something similar for
     \texttt{or}'s.  The Standard ML code generating the MIPS assembly for both
     \texttt{and} and \texttt{or} can be seen in appendix
     \ref{code_gen_and_and_or}.
@@ -314,8 +321,8 @@ fun keyword (s, pos) =
 
     \subsection{Integer Negation}
     Integer negation has been implemented two places in the lexer.  For integer
-    constants which are negated, the negated value is simply created on
-    compiletime. This is done by the rule,
+    constants which is negated the negated value is simply created on
+    compiletime.  This is done by the rule,
 
     \begin{lstlisting}[basicstyle=\small]
 | [`0`-`9`]+ | "~" [`0`-`9`]+ { case Int.fromString (getLexeme lexbuf) of
@@ -636,7 +643,7 @@ val whileloop = case getElemSize tp of
     \texttt{fn} corresponding to a \texttt{LAMBDA} in the parser.  We also
     created a token for the special equals symbols used in lambda expressions
     (=$>$).  We called this token \texttt{LAMBDAEQ}.\\
-    We then implemented lambdas
+    We the implemented lambdas
     in the parser.  We did this by observing that the \texttt{map} function in
     the parser is defined as,
 
@@ -644,7 +651,7 @@ val whileloop = case getElemSize tp of
 | MAP LPAR FunArg COMMA Exp RPAR { Map ($3, $5, (), (), $1) }
     \end{lstlisting}
 
-    meaning that the lambda is supposed to be passed as a \texttt{FunArg}.  We then
+    meaning that the lambda is supposed to passed as a \texttt{FunArg}.  We then
     looked at the declaration of a FunArg,
 
     \begin{lstlisting}[basicstyle=\small]
@@ -706,7 +713,7 @@ and evalFunArg (FunName fid, vtab, ftab, callpos) =
 The lambdas type checker is very simple. First we declare the lambda function as a normal function, so
 it will get typevalidated the same way as a normal function.
 Then we check if the vtable actually contains the refereed values in the expression, and that no input in
-the table is declared twice, and at last we check if the return type of the function actually is correctly defined.
+the table is declared twice, and at last we check if the return type of the function actually is correct defined.
  \begin{lstlisting}[language=ML,basicstyle=\footnotesize,caption={Lambda in TypeChecker.sml },firstnumber=361,breaklines=false,numbers=left]
   | checkFunArg (In.Lambda (tp, params, expr, pos), vtab, ftab, callpos) =
     let val infdec  = In.FunDec ("lambda", tp, params, expr, pos)
@@ -755,18 +762,18 @@ is by a list, where each step is followed by the next, in chronological order.
   a new list.
   \item Generate code that assigns input from args to the parameter list.\\
   We call zipWith again, but this time we generate a list of mips instructions. In this case
-  move the assigned values into the correct registers, so the expression can use these.
+  move the assigned values into the correct registers, so the expression can use these
   \item Generate the local vTable, that contains the local variables.\\
   We now generate a new vTable, that contains the local variables only. We foldl over the zipped
   variable we declared in 2. This creates a SymTab structure witch makes it a valid vtable.
- \item Merge local and global vtable.\\
+ \item Merge local and global vtable\\
  This makes the expression able to see variables declared outside the scope  
   \item Compile the expression from the lambda, via compileExp. It takes the merged vtable\\
   We can now compile the expression in the lambda. We have assigned the arguments, and made a
-  local vTable, so the function can reassign variables such as x, and a global, so as to call
+  local vTable so the function can reassign variables such as x, and a global, so to can call
   other variables than its arguments
   and a register to place its result.
-  \item Then we concatinate the code from 3 and 5, and returns this as a lambda call.
+  \item then we concatinate the code from 3 and 5, and returns this as a lambda call.
 \end{enumerate}
 The source code looks like this
  \begin{lstlisting}[language=ML,basicstyle=\footnotesize,caption={Lambda in CodeGen.sml },firstnumber=850,breaklines=false,numbers=left]
@@ -801,7 +808,7 @@ and applyFunArg (FunName s, args, vtable, place, pos) : Mips.Prog =
         \hline
         lambda\_nested\_redeclare.fo   & Redeclares already declared values in the outer scope                           \\
         \hline
-        lambda\_nested\_sameName.fo        & No variable conflicts, no double decelerations       \\
+        lambda\_nested\_sameName.fo        & No variable conflicts, mo double decelerations       \\
         \hline
         lambda\_type\_err.fo     & Returns a type error, because lambda function has wrong type  \\
        
@@ -879,7 +886,7 @@ and applyFunArg (FunName s, args, vtable, place, pos) : Mips.Prog =
                And (e1', e2', pos)
         end
 	\end{lstlisting}
-	First the subexpressions \texttt{e1} and \texttt{e2}, found in the and expression, are
+	First the subexpressions \texttt{e1} and \texttt{e2}, found in the and-expression, are
 	optimized, and put respectively in variables \texttt{e1'} and \texttt{e2'}. The cases descriped above
 	are then run through. Our implementation of logical or follows a similar rationale, and can be found in
 	appendix \ref{ccpfor}.
@@ -952,7 +959,7 @@ fun bindExpPropagatee name e vtable =
 	\end{lstlisting}
 
 	\subsection{Tests}
-	We have tested our optimization implementations by using the commands: \\
+	We have tested out optimization implementations by using the commands: \\
 	$\backslash \texttt{bin}\backslash \texttt{fasto -p c testfile.fo}$ and
 	$\backslash \texttt{bin}\backslash \texttt{fasto -p testfile.fo}$. With \texttt{-p c}, we only test with the constant folding and
 	copy/constant propagation pass, whereas with just \texttt{-p}, we run the only set of optimizations. Our first example is found in \texttt{1optim.fo}, here we first test with \texttt{-p c}.\medskip\\
