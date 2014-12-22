@@ -89,7 +89,7 @@ fun copyConstPropFoldExp vtable e =
         in case e1' of
                Constant (BoolVal b, _) => if b
                                           then copyConstPropFoldExp vtable e2
-                                          else copyConstPropFoldExp vtable e2
+                                          else copyConstPropFoldExp vtable e3
              | _ => If (copyConstPropFoldExp vtable e1',
                         copyConstPropFoldExp vtable e2,
                         copyConstPropFoldExp vtable e3,
