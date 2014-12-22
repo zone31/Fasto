@@ -1,0 +1,425 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper, hmargin={2.8cm, 2.8cm}, vmargin={2.5cm, 2.5cm}]{geometry}
+\usepackage{eso-pic} % \AddToShipoutPicture
+\usepackage{graphicx} % \includegraphics
+\usepackage{fancyhdr, amsmath, amssymb, comment, caption, placeins, subfigure,
+    fixltx2e, changepage, listings, courier, soul, hyperref, geometry,
+    enumerate, dsfont, listings, enumitem}
+    \usepackage[T1]{fontenc}
+
+
+
+
+
+\lstset{
+basicstyle=\footnotesize,
+breaklines=false,
+language=ML,
+numbers=left}
+
+
+
+
+\author{\Large{Magnus N\o rskov Stavngaard} \\
+		\texttt{magnus@stavngaard.dk}
+		\\\\
+		\Large{Mark Jan Jacobi} \\
+        \texttt{mark@jacobi.pm}
+		 \\\\
+		\Large{Christian Salb\ae k} \\
+		\texttt{chr.salbaek@gmail.com}
+}
+
+\title{
+    \vspace{3cm}
+    \Huge{Compiler Design} \\
+    \Large{Compiler for the Fasto Programming Language}
+}
+
+\pagestyle{fancy}
+\lhead{\small{Magnus N. S. Mark J. J. Christian S.}}
+\chead{\date{\today}}
+\rhead{University of Copenhagen}
+% \lfoot{}
+% \cfoot{}
+% \rfoot{}
+
+% Change indent length of paragraph not after a header.
+\setlength{\parindent}{0cm}
+
+% Remove page numbering in the beginning
+\pagenumbering{gobble}
+
+\begin{document}
+
+    %% Change `ku-farve` to `nat-farve` to use SCIENCE's old colors or
+    %% `natbio-farve` to use SCIENCE's new colors and logo.
+    \AddToShipoutPicture*{\put(0,0){\includegraphics*[viewport=0 0 700 600]
+        {include/ku-farve}}}
+    \AddToShipoutPicture*{\put(0,602){\includegraphics*[viewport=0 600 700 1600]
+        {include/ku-farve}}}
+
+    %% Change `ku-en` to `nat-en` to use the `Faculty of Science` header
+    \AddToShipoutPicture*{\put(0,0){\includegraphics*{include/ku-en}}}
+
+    \clearpage
+    \maketitle
+    \thispagestyle{empty}
+
+    \newpage
+
+    \tableofcontents
+
+    \newpage
+
+    \pagenumbering{arabic} % Arabic page numbers (and reset to 1)
+
+    \section{Task 1 - Warmup}
+    In task 1 we were asked to implement the boolean operators \texttt{\&\&},
+    \texttt{||} and \texttt{not}, the boolean constants true and false, integer
+    multiplication, integer division and integer negation. \\
+
+    We will go through in detail the implementation of integer division and
+    multiplication and then skip rather quickly over the implementation of the
+    rest of the operators only describing what is different from multiplication
+    and division as the operations is implemented very similar.
+
+    \subsection{Integer Multiplication and Division}
+    We started by implementing integer multiplication and division in the Lexer.
+    We created a new rule for the star and division operator that created tokens
+    and passed the tokens to the parser.
+
+    \begin{lstlisting}[basicstyle=\small]
+| `*`   { Parser.TIMES    (getPos lexbuf) }
+| `/`   { Parser.DIVIDE   (getPos lexbuf) }
+    \end{lstlisting}
+
+    In the parser we added the tokens where addition and subtraction was already
+    defined, as integer multiplication and division has allot in common with
+    addition and subtraction.  Integer multiplication and division carries two
+    integers corresponding to a position in the code.
+
+    \begin{lstlisting}[basicstyle=\small]
+%token <(int*int)> PLUS MINUS TIMES DIVIDE DEQ EQ LTH BOOLAND BOOLOR NOT NEG
+    \end{lstlisting}
+
+    We also declare both times and divide as left associative operators with
+    greater precedence than addition and subtraction.
+
+    \begin{lstlisting}[basicstyle=\small]
+%left BOOLOR
+%left BOOLAND
+%left NOT
+%left DEQ LTH
+%left PLUS MINUS
+%left TIMES DIVIDE
+%left NEG
+    \end{lstlisting}
+
+    We then defined that an expression could consist of an expression followed
+    by a multiplication or division followed by an expression.  And that this
+    correspond to \texttt{Times} and \texttt{Divide} in the Fasto language
+    definition.
+
+    \begin{lstlisting}[basicstyle=\small]
+Exp :     NUM                 { Constant (IntVal (#1 $1), #2 $1) }
+        | CHARLIT             { Constant (CharVal (#1 $1), #2 $1) }
+
+        (...)
+
+        | Exp TIMES Exp       { Times($1, $3, $2) }
+        | Exp DIVIDE Exp      { Divide($1, $3, $2) }
+
+        (...)
+    \end{lstlisting}
+
+    In the interpreter we implemented cases for \texttt{Times} and
+    \texttt{Divide} in the \texttt{evalExpr} function.
+
+    \begin{lstlisting}[basicstyle=\small]
+| evalExp ( Times(e1, e2, pos), vtab, ftab ) =
+      let val res1 = evalExp(e1, vtab, ftab)
+          val res2 = evalExp(e2, vtab, ftab)
+      in  evalBinopNum(op *, res1, res2, pos)
+      end
+
+| evalExp ( Divide(e1, e2, pos), vtab, ftab ) =
+      let val res1 = evalExp(e1, vtab, ftab)
+          val res2 = evalExp(e2, vtab, ftab)
+      in  evalBinopNum(op Int.quot, res1, res2, pos)
+      end
+    \end{lstlisting}
+
+    Our cases evaluate recursively the expressions to the left and right of the
+    operator and then calls \texttt{evalBinopNum} with the appropriate operator
+    and the results from evaluating the lefthand and the righthand side of the
+    expression. \\
+
+    We then implemented the operators in the typechecker.  Our cases call a
+    helper function \texttt{checkBinOp} that takes a position, an expected type,
+    and two expressions and check that the two expressions have the type of the
+    expected type.  If the types match the types is returned with
+    \textit{typedecorated} versions of the expressions, if the types doesn't
+    match an error is raised. \\
+    We then simply return the same operation, now with a return type.
+
+    \begin{lstlisting}[basicstyle=\small]
+| In.Times (e1, e2, pos)
+  => let val (_, e1_dec, e2_dec) = checkBinOp ftab vtab (pos, Int, e1, e2)
+     in (Int, Out.Times (e1_dec, e2_dec, pos))
+     end
+
+| In.Divide (e1, e2, pos)
+  => let val (_, e1_dec, e2_dec) = checkBinOp ftab vtab (pos, Int, e1, e2)
+     in (Int, Out.Divide (e1_dec, e2_dec, pos))
+     end
+    \end{lstlisting}
+
+    We can now finally implement the operators in the code generator.  Here we
+    create two temporary variables \texttt{t1} and \texttt{t2} to hold the
+    values of the expression on either side of the operator.  We then call the
+    function \texttt{compileExp} recursively with these names to get the machine
+    code for the expression on either side of the operator.  Then we just simply
+    return a list of first the code to compute the left hand side of the
+    operator, then the right hand side, and then we apply the MIPS commands
+    \texttt{MUL} and \texttt{DIV} to the two \textit{subresults} and save the
+    result in \texttt{place}.
+
+    \begin{lstlisting}[basicstyle=\small]
+| Times (e1, e2, pos) =>
+    let val t1 = newName "times_L"
+        val t2 = newName "times_R"
+        val code1 = compileExp e1 vtable t1
+        val code2 = compileExp e2 vtable t2
+    in  code1 @ code2 @ [Mips.MUL (place, t1, t2)]
+    end
+| Divide (e1, e2, pos) =>
+    let val t1 = newName "divide_L"
+        val t2 = newName "divide_R"
+        val code1 = compileExp e1 vtable t1
+        val code2 = compileExp e2 vtable t2
+    in  code1 @ code2 @ [Mips.DIV (place, t1, t2)]
+    end
+    \end{lstlisting}
+
+    \subsection{Boolean Operators}
+    We started by implementing the boolean operators in the lexer in a very
+    similar way that we implemented multiplication and division.  In the parser,
+    we made sure that the boolean operators were defined as having a lower
+    precedence than the arithmetic operators, so that an expression like,
+
+    \begin{lstlisting}[basicstyle=\small]
+        2 + 4 == 6 || 5 + 8 == 10 && 8 < 10
+    \end{lstlisting}
+
+    is evaluated like,
+
+    \begin{lstlisting}[basicstyle=\small]
+        ((2 + 4) == 6) || (((5 + 8) == 10) && (8 < 10)).
+    \end{lstlisting}
+
+    Notice that the \texttt{\&\&} operator is also evaluated before the
+    \texttt{||} operator. \\
+
+    After this we implemented the operators in the interpreter.  Here we created
+    a case for \texttt{and} and a case for \texttt{or}.  We had to implement
+    them as short circuited which means that the right hand side of an
+    \texttt{and} should only be evaluated if the left hand side is true.
+    Similarly for \texttt{or} the right hand side should only be evaluated if
+    the left hand side is false (The or implementation can be seen in appendix
+    \ref{interpreter_and_and_or}.
+
+    \begin{lstlisting}[basicstyle=\small]
+| evalExp ( And(e1, e2, pos), vtab, ftab ) =
+      let val r1 = evalExp(e1, vtab, ftab)
+      in case r1 of
+         BoolVal b1 => if b1 then
+                        let val r2 = evalExp(e2, vtab, ftab)
+                        in case r2 of
+                           BoolVal b2 => BoolVal b2
+                         | otherwise  => raise Error ("And expect boolval", pos)
+                        end
+                       else BoolVal b1
+       | otherwise  => raise Error ("And expect boolval", pos)
+      end
+
+    \end{lstlisting}
+
+    We first evaluate the lefthand expression, if that is true we evaluate the
+    right hand expression, if that is also true we return True otherwise we
+    return false.  If either of the expressions isn't a BoolVal, we report an
+    error. \\
+
+    In the code generator it was also required that we implemented the boolean
+    operators to be short-circuiting so that the right hand side of an
+    \texttt{and} only evaluates if the left hand side is true.  Similarly the
+    right hand side of an \texttt{or} evaluates only if the left hand side is
+    false.  We did this with the MIPS assembly code,
+
+    \begin{lstlisting}[basicstyle=\small]
+$t1 = compile e1
+
+beq $t1, $zero, False
+
+$t2 = compile e2
+
+beq $t2, $zero, False
+li  $s1, 1 ;; Assuming the result should be saved to $s1
+j   End
+
+False:
+    li  $s1, 0 ;; Assuming the result should be saved to $s2
+
+End:
+    \end{lstlisting}
+
+    It can be seen that if the first part of an \texttt{and} return false i.e.
+    the result register contains 0, we simply skip over the execution of the
+    right hand side and jump strait to False.  We did something similar for
+    \texttt{or}'s.  The Standard ML code generating the MIPS assembly for both
+    \texttt{and} and \texttt{or} can be seen in appendix
+    \ref{code_gen_and_and_or}.
+
+    \subsection{Boolean Negation}
+    In the lexer we implemented the operator for boolean negation \texttt{not}
+    as a keyword.  We did this because \texttt{not} is a valid variable name and
+    would pass the rule,
+
+    \begin{lstlisting}[basicstyle=\small]
+| [`a`-`z` `A`-`Z`] [`a`-`z` `A`-`Z` `0`-`9` `_`]*
+                      { keyword (getLexeme lexbuf,getPos lexbuf) }.
+    \end{lstlisting}
+
+    If we didn't implement a keyword, \texttt{not} would simply fall through and
+    go in the case,
+
+    \begin{lstlisting}
+| _              => Parser.ID (s, pos)
+    \end{lstlisting}
+
+    in the \texttt{keyword} function.  The implemented keyword goes to a
+    \texttt{Parser.NOT} in the parser and carries only the position.
+
+    \begin{lstlisting}[basicstyle=\small]
+fun keyword (s, pos) =
+    case s of
+         "if"           => Parser.IF pos
+       | "then"         => Parser.THEN pos
+
+       (...)
+
+       | "not"          => Parser.NOT pos
+       | "fn"           => Parser.LAMBDA pos
+       | _              => Parser.ID (s, pos)
+}
+    \end{lstlisting}
+
+    In the interpreter \texttt{not} is implemented simply by evaluating the
+    expression after the \texttt{not}.  If that expression results in a true,
+    false is returned, if it results in a false, true is returned and otherwise
+    an error is reported.  The code can be seen in appendix
+    \ref{interpreter_not}. \\
+
+    \texttt{not} is implemented in the code generator as a branch operation.  If
+    \texttt{not} is applied to true 3 operations are performed, if it is applied
+    to false only 2 operations are performed.  The code generating MIPS assembly
+    can be found in appendix \ref{code_gen_not}.
+
+    \subsection{Integer Negation}
+    Integer negation has been implemented two places in the lexer.  For integer
+    constants which is negated the negated value is simply created on
+    compiletime.  This is done by the rule,
+
+    \begin{lstlisting}[basicstyle=\small]
+| [`0`-`9`]+ | "~" [`0`-`9`]+ { case Int.fromString (getLexeme lexbuf) of
+                             NONE   => lexerError lexbuf "Bad integer"
+                           | SOME i => Parser.NUM (i, getPos lexbuf) }
+    \end{lstlisting}
+
+    which says that a number or a tilde followed by a one or more numbers is a
+    Parser.NUM in the parser and the integer value is carried with it. \\
+
+    If a tilde is not followed by a number for example in,
+
+    \begin{lstlisting}
+~(2 + 4) - ~(2 - ~f(3))
+    \end{lstlisting}
+
+    the negation is caught by the rule,
+
+    \begin{lstlisting}
+| "~"                 { Parser.NEG      (getPos lexbuf) }
+    \end{lstlisting}
+
+    In the code generator the negations is performed as a exclusive or and an
+    addition.
+
+    \begin{lstlisting}[basicstyle=\small]
+| Negate (e, pos) =>
+    let val negThis  = newName "negThis"
+        val code     = compileExp e vtable negThis
+        val negation =
+            [Mips.XORI(negThis,negThis,"-1")] @ [Mips.ADDI (place,negThis,"1")]
+    in code @ negation
+    end
+    \end{lstlisting}
+
+    This works because computers use two's complement to express numbers.  In
+    two's complement the negation of a number is computed by flipping all bits
+    in the number and adding 1.  We flip all bits by exclusive or'ring with -1,
+    the binary value of -1 is 1111 1111.  Therefore all the places where there
+    was 0 in the original number there will now be 1 and where there were 1
+    there will now be 0.  After that we simply add 1 with \texttt{addi} and save
+    the result to place.
+
+    \subsection{Boolean Literals}
+    The boolean literals is implemented in the lexer as a keyword that carries a
+    boolean value to the parser.  The implementation of boolean literals in all
+    compiler phases can be found in appendix \ref{boolean_implementation}.
+
+    \subsection{Test}
+    \begin{tabular}{|l|l|}
+        \hline
+        \textbf{Test name} & \textbf{Test description}                        \\
+        \hline
+        andOr.fo           & Tests boolean operators and their precedence.    \\
+        \hline
+        and\_sc.fo         & Test if and is properly short circuited.         \\
+        \hline
+        boolCompare.fo     & Test boolean literals.                           \\
+        \hline
+        boolLit.fo         & Another test testing if boolean literals.        \\
+        \hline
+        intNegate.fo       & Test negation of integer values, only test the   \\
+                           & simple case ~number not ~(number).  Operator     \\
+                           & precedence is also tested.                       \\
+        \hline
+        muldivide.fo       & Tests the multiplication and division operators. \\
+        \hline
+        negate2.fo         & Again test simple integer negation.              \\
+        \hline
+        negate.fo          & Test the case where integer negation is followed \\
+                           & by something other than a number.                \\
+        \hline
+        or\_sc.fo          & Test if or is short circuited.                   \\
+        \hline
+        tobeornottobe.fo   & Test precedence of boolean operators.            \\
+        \hline
+        and\_err.fo        & Test a typeerror for and.                        \\
+        \hline
+        div\_err.fo        & Test a typeerror for div.                        \\
+        \hline
+        mul\_err.fo        & Test a typeerror for mul.                        \\
+        \hline
+        neg\_err           & Test a typeerror for negation.                   \\
+        \hline
+        not\_err.fo        & Test a typeerror for not.                        \\
+        \hline
+        or\_err.fo         & Test a typeerror for or.                         \\
+        \hline
+    \end{tabular}
+
+    All the test files are included in appendix \ref{task_1_tests}.
+
+
+\end{document}

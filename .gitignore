@@ -12,3 +12,9 @@ report/*.aux
 report.synctex.gz
 report/report.pdf
 report/report.toc
+code_syntax/*.out
+code_syntax/*.log
+code_syntax/*.aux
+code_syntax.synctex.gz
+code_syntax/report.pdf
+code_syntax/report.toc
