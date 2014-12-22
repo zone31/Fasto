@@ -365,15 +365,33 @@ fun keyword (s, pos) =
     compiler phases can be found in appendix \ref{boolean_implementation}.
 
     \subsection{Test}
-    \begin{tabular}{|c|c|}
+    \begin{tabular}{|l|l|}
         \hline
-        \textbf{Test name} & \textbf{Test description}                      \\
+        \textbf{Test name} & \textbf{Test description}                        \\
         \hline
-        andOr.fo           & Tests boolean operators and their precedence.  \\
-                           & This test fails if the precedence is wrong or  \\
-                           & evaluation is wrong                            \\
+        andOr.fo           & Tests boolean operators and their precedence.    \\
         \hline
-
+        and\_sc.fo         & Test if and is properly short circuited.         \\
+        \hline
+        boolCompare.fo     & Test boolean literals.                           \\
+        \hline
+        boolLit.fo         & Another test testing if boolean literals.        \\
+        \hline
+        intNegate.fo       & Test negation of integer values, only test the   \\
+                           & simple case ~number not ~(number).  Operator     \\
+                           & precedence is also tested.                       \\
+        \hline
+        muldivide.fo       & Tests the multiplication and division operators. \\
+        \hline
+        negate2.fo         & Again test simple integer negation.              \\
+        \hline
+        negate.fo          & Test the case where integer negation is followed \\
+                           & by something other than a number.                \\
+        \hline
+        or\_sc.fo          & Test if or is short circuited.                   \\
+        \hline
+        tobeornottobe.fo   & Test precedence of boolean operators.            \\
+        \hline
     \end{tabular}
 
     \section{Task 2 - Implement \texttt{filter} and \texttt{scan}}
@@ -413,11 +431,11 @@ fun keyword (s, pos) =
     \end{itemize}
 
     \section{Task 3 - $\lambda$-expressions in SOAC's}
-    \subsection{Lexer}    
+    \subsection{Lexer}
     We implemented lambda functions in the lexer by creating a keyword
     \texttt{fn} corresponding to a \texttt{LAMBDA} in the parser.  We also
     created a token for the special equals symbols used in lambda expressions
-    (=$>$).  We called this token \texttt{LAMBDAEQ}. 
+    (=$>$).  We called this token \texttt{LAMBDAEQ}.
     \subsection{Parser}
     We then implemented lambdas
     in the parser.  We did this by observing that the \texttt{map} function in
@@ -456,7 +474,7 @@ linerange={125-127},
 numbers=left]
 {../fasto/src/Parser.grm}
 
-\subsection{Interperter}    
+\subsection{Interperter}
     We implemented lambdas in the interpreter by changing the way function
     arguments are evaluated.  We could do this as it is an invariant of the
     Fasto programming language that lambdas can only be used in Second Order
@@ -508,7 +526,7 @@ linerange={848-863},
 numbers=left]
 {../fasto/src/CodeGen.sml}
 
- 
+
 
     \section{Task 4 - Copy propagation and constant folding}
 	For our implementation of the optimizations copy propagration and constant
@@ -520,7 +538,7 @@ numbers=left]
 	Our implementation of the case for multiplication is based on the simplifications
 	given for constant folding of multiplication expressions given in \texttt{GroupProj14.pdf}.
 	They are as follows, here \texttt{e1'} and \texttt{e2'} are the recursively optimized
-	subexpressions, found in a multiplication expression: $ \texttt{e1} \ast \texttt{e2}$ 
+	subexpressions, found in a multiplication expression: $ \texttt{e1} \ast \texttt{e2}$
 	\begin{itemize}
 	\item if \texttt{e1'} and \texttt{e2'} are constant values then the result will be the
 			multiplication value,
@@ -598,7 +616,7 @@ numbers=left]
              | _ =>
                Not (e1', pos)
         end
-	\end{lstlisting}	
+	\end{lstlisting}
 	First \texttt{e1} is recursively optimised, and put in \texttt{e1'}. The described cases are
 	then run through. Our implementation of integer negation follows a similar rationale, and can
 	be found in appenddix \ref{CopyConstPropFold}.
@@ -645,7 +663,7 @@ fun bindExpPropagatee name e vtable =
         NONE => SymTab.remove name vtable
       | SOME prop => SymTab.bind name prop vtable
 	\end{lstlisting}
-	
+
 	\subsection{Tests}
 	We have tested out optimization implementations by using the commands: \\
 	$\backslash \texttt{bin}\backslash \texttt{fasto -p c testfile.fo}$ and
@@ -654,10 +672,10 @@ fun bindExpPropagatee name e vtable =
 	\begin{center}
 	\begin{minipage}{.5\textwidth}
 	\begin{lstlisting}
-fun int main() =  
-    let a = read(int) in    
-    let b = 
-        let x = a in        
+fun int main() =
+    let a = read(int) in
+    let b =
+        let x = a in
         let y = 2 in
         (x + 2) * (y - 2) in
     b
@@ -669,25 +687,25 @@ fun int main() =
 	\end{minipage}%
 	\begin{minipage}{.4\textwidth}
 	\begin{lstlisting}
-fun int main() =  
-    let a = read(int) in    
-    let b = 
-        let x = a in        
+fun int main() =
+    let a = read(int) in
+    let b =
+        let x = a in
         let y = 2 in
         0 in
     b
 	\end{lstlisting}
-	\end{minipage}		
+	\end{minipage}
 	\end{center}
 	It is clear that the expression \texttt{(x + 2) $\ast$ (y - 2)} has been optimized to zero, as $\texttt{y = 2}$
 	and $\texttt{(y-2) = 0}$. Going further with \texttt{-p}, we get:
 	\begin{center}
 	\begin{minipage}{.5\textwidth}
 	\begin{lstlisting}
-fun int main() =  
-    let a = read(int) in    
-    let b = 
-        let x = a in        
+fun int main() =
+    let a = read(int) in
+    let b =
+        let x = a in
         let y = 2 in
         (x + 2) * (y - 2) in
     b
@@ -699,12 +717,12 @@ fun int main() =
 	\end{minipage}%
 	\begin{minipage}{.4\textwidth}
 	\begin{lstlisting}
-fun int main() =  
-    let a = read(int) in    
+fun int main() =
+    let a = read(int) in
     let b = 0 in
     b
 	\end{lstlisting}
-	\end{minipage}		
+	\end{minipage}
 	\end{center}
 	Here the dead variables, \texttt{x} and \texttt{y}, have also been removed. \\
     This refers to \ref{app_title}
