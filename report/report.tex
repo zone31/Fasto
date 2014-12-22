@@ -392,7 +392,21 @@ fun keyword (s, pos) =
         \hline
         tobeornottobe.fo   & Test precedence of boolean operators.            \\
         \hline
+        and\_err.fo        & Test a typeerror for and.                        \\
+        \hline
+        div\_err.fo        & Test a typeerror for div.                        \\
+        \hline
+        mul\_err.fo        & Test a typeerror for mul.                        \\
+        \hline
+        neg\_err           & Test a typeerror for negation.                   \\
+        \hline
+        not\_err.fo        & Test a typeerror for not.                        \\
+        \hline
+        or\_err.fo         & Test a typeerror for or.                         \\
+        \hline
     \end{tabular}
+
+    All the test files are included in appendix \ref{task_1_tests}.
 
     \section{Task 2 - Implement \texttt{filter} and \texttt{scan}}
     \subsection{Typerules}
@@ -858,6 +872,112 @@ In.Constant  (v, pos)     => (valueType v, Out.Constant (v, pos))
 | Constant (BoolVal b, pos) => if b
                                then [Mips.LI (place, "1")]
                                else [Mips.LI (place, "0")]
+    \end{lstlisting}
+
+    \section{Task 1 Tests} \label{task_1_tests}
+    \subsection{and\_err.fo}
+    \begin{lstlisting}[basicstyle=\small]
+fun bool main() =
+    true && '5'
+    \end{lstlisting}
+
+    \subsection{andOr.fo}
+    \begin{lstlisting}[basicstyle=\small]
+fun [char] writebool(bool b) = if b then write("true") else write("false")
+
+fun int main() =
+    let a = 1 == 1 in        // a = true
+    let b = 1 == 2 in        // a = false
+    let c = a || b && a in   // c = true
+    let d = a && b in        // d = false
+    let e = a || b in        // e = true
+    let f = (a || b) && b in // f = false
+    let w = writebool(a) in
+    let w = writebool(b) in
+    let w = writebool(c) in
+    let w = writebool(d) in
+    let w = writebool(e) in
+    let w = writebool(f) in
+        0
+    \end{lstlisting}
+
+    \subsection{and_sc.fo}
+    \begin{lstlisting}[basicstyle=\small]
+fun int main() =
+    let a = {true, false, true, true, true, false} in
+        if false && a[100] // Array index out of bounds
+        then write(1)
+        else write(0)
+    \end{lstlisting}
+
+    \subsection{boolCompare.fo}
+    \begin{lstlisting}[basicstyle=\small]
+fun [char] printbool(bool b) = if b then write("true ") else write("false ")
+
+fun int main() =
+    let False = false in
+    let True = true in
+    let w = printbool(False) in // false
+    let w = printbool(True) in // true
+    let w = printbool(True == True) in // true
+    let w = printbool(True == False) in // false
+    let w = printbool(True == False || not False == True) in // true
+    let w = printbool(1+2 == 2) in // false
+    let w = printbool(10*2 == 20 ) in // true
+    let w = printbool(10/2 == 5 ) in // true
+    let w = printbool(False == True || not False && True == false) in // false
+        0
+    \end{lstlisting}
+
+    \subsection{boolLit.fo}
+    \begin{lstlisting}[basicstyle=\small]
+fun [char] writebool(bool b) = if b then write("true") else write("false")
+
+fun int main() =
+    let a = true in
+    let b = false in
+    let w = writebool(a) in
+    let w = writebool(b) in
+        0
+    \end{lstlisting}
+
+    \subsection{div\_err.fo}
+    \begin{lstlisting}[basicstyle=\small]
+fun int main() =
+    4 / 'h'
+    \end{lstlisting}
+
+    \subsection{intNegate.fo}
+    \begin{lstlisting}[basicstyle=\small]
+fun int test(int x) =
+    let w = write (x)  in
+    0
+
+fun int main() =
+    let w =  test(3/2) in
+    let w =  test(5/3) in
+    let w =  test(10/9) in
+    let w =  test(10/11) in
+    let w =  test(~10/2) in
+    let w =  test(~10/~2) in
+    let w =  test(10/~2) in
+    let w =  test(5/~3) in
+    let w =  test(1+2+5/3*9+3) in
+    let w =  test(5+10/~2*3-~2) in //(5+((5/(-2))*3))-(-3)= -1.5 ~~ -1
+
+    0
+    \end{lstlisting}
+
+    \subsection{muldivide.fo}
+    \begin{lstlisting}[basicstyle=\small]
+fun int main() =
+    let q = 3*5 in
+    let w = 4/2 in
+    let r = 5/2 in
+    let g = write(q) in
+    let g = write(w) in
+    let g = write(r) in
+    0
     \end{lstlisting}
 
 \end{document}
