@@ -507,9 +507,18 @@ and evalFunArg (FunName fid, vtab, ftab, callpos) =
 The code generation of lambda is a bit complex. The easiest way to explain how it works
 is by a list, where each step is followed by the next, in chronological order.
 \begin{enumerate}
-  \item Remove type decleration from paralist.
-  \item Zip the newly generated list with args.
-  \item Generate code that assings input from args to the parameter list.
+  \item Remove type decleration from paralist.\\
+  We remove the type decleration, beacuse it is not nessesary in the compilation state. This
+  prepares us for a relation between the args in the call itself, and the parameters in the 
+  lambda.
+  \item Zip the newly generated list with args.\\
+  This assings the args and the parameters in touples. We use a function called zipWith.
+  It takes in 2 lists of 2 different types, and a function. Then it iterates over the 2 lists,
+  and uses each element of the input lists in the input. Then the function return is stored in
+  a new list.  
+  \item Generate code that assings input from args to the parameter list.\\
+  We call zipWith again, but this time we generate a list of mips instructions. In this case
+  move the assigned values into the correct registers, so the expression can use these
   \item Generate the local vTable, that contains the local variables.
   \item Compile the expression from the lambda, via compileExp. It takes the local vTable,
   and a register to place its result.
@@ -520,9 +529,9 @@ The source code looks like this
 language=ML,
 basicstyle=\footnotesize,
 caption={Lambda in CodeGen.sml },
-firstnumber=848,
+firstnumber=850,
 breaklines=true,
-linerange={848-863},
+linerange={850-865},
 numbers=left]
 {../fasto/src/CodeGen.sml}
 
