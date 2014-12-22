@@ -58,7 +58,7 @@ fun copyConstPropFoldExp vtable e =
             val e2' = copyConstPropFoldExp vtable e2
         in case (e1', e2') of
                (Constant (IntVal x, _), Constant (IntVal y, _)) =>
-               Constant (IntVal (x-y), pos)
+               Constant (IntVal (x-y), pos) (* Changed x+y to x-y *)
              | (_, Constant (IntVal 0, _)) =>
                e1'
              | _ =>
@@ -90,6 +90,7 @@ fun copyConstPropFoldExp vtable e =
                Constant (BoolVal b, _) => if b
                                           then copyConstPropFoldExp vtable e2
                                           else copyConstPropFoldExp vtable e3
+                                               (* changed e2 to e3 *)
              | _ => If (copyConstPropFoldExp vtable e1',
                         copyConstPropFoldExp vtable e2,
                         copyConstPropFoldExp vtable e3,

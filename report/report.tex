@@ -1087,7 +1087,9 @@ fun bool main() =
 	\end{lstlisting}
 	\end{minipage}
 	\end{center}
-	Again it is clear that the appropriate optimizations have taken place.
+	Again it is clear that the appropriate optimizations have taken place. As an additional test
+	\texttt{./runtests -o} can be run. Doing this will show that all of the tests, except \texttt{testIOMSSP.fo}, will run correctly optimized.
+	We haven't been able to determine why \texttt{testIOMSSP.fo} doesn't work optimized.
 
     \newpage
     \appendix
@@ -1222,6 +1224,7 @@ In.Constant  (v, pos)     => (valueType v, Out.Constant (v, pos))
                                else [Mips.LI (place, "0")]
     \end{lstlisting}
 
+	\newpage
 	\section{CopyConstPropFold} \label{CopyConstPropFold}
 	\begin{lstlisting}[basicstyle=\small]
 fun expPropagatee (Var (varname, _)) = SOME (VarProp varname)
@@ -1346,6 +1349,37 @@ fun bindExpPropagatee name e vtable =
         end
     \end{lstlisting}
 
+	\subsubsection{If}
+	\begin{lstlisting}[basicstyle=\small]
+      | If (e1, e2, e3, pos) =>
+        let val e1' = copyConstPropFoldExp vtable e1
+        in case e1' of
+               Constant (BoolVal b, _) => if b
+                                          then copyConstPropFoldExp vtable e2
+                                          else copyConstPropFoldExp vtable e3
+                                               (* changed e2 to e3 *)
+             | _ => If (copyConstPropFoldExp vtable e1',
+                        copyConstPropFoldExp vtable e2,
+                        copyConstPropFoldExp vtable e3,
+                        pos)
+        end
+    \end{lstlisting}
+    
+   	\subsubsection{Minus} \label{ccpfvar}
+	\begin{lstlisting}[basicstyle=\small]
+      | Minus (e1, e2, pos) =>
+        let val e1' = copyConstPropFoldExp vtable e1
+            val e2' = copyConstPropFoldExp vtable e2
+        in case (e1', e2') of
+               (Constant (IntVal x, _), Constant (IntVal y, _)) =>
+               Constant (IntVal (x-y), pos) (* Changed x+y to x-y *)
+             | (_, Constant (IntVal 0, _)) =>
+               e1'
+             | _ =>
+               Minus (e1', e2', pos)
+        end
+    \end{lstlisting}
+    
     \newpage
     \section{Task 1 Tests} \label{task_1_tests}
     \subsection{and\_err.fo}
