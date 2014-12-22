@@ -857,8 +857,11 @@ structure CodeGen = struct
           val bind = zipWith Mips.MOVE argsparalist args (*Moves the arguments*)
           (*Delcares the local vtable, by binding zipped in a SymTab*)
           val localVtable = foldl(fn ((x,y),acc)=>SymTab.bind x y acc) (SymTab.empty()) zipped
+
+          val combinedVtable = SymTab.combine localVtable vtable
+
           (*compiles the lambda expression with the local v table, and saves res to place*)
-          val compiledExp = compileExp exp localVtable place
+          val compiledExp = compileExp exp combinedVtable place
       in []
         @ bind
         @ compiledExp
