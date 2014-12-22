@@ -179,7 +179,7 @@ Exp :     NUM                 { Constant (IntVal (#1 $1), #2 $1) }
     \texttt{MUL} and \texttt{DIV} to the two \textit{subresults} and save the
     result in \texttt{place}.
 
-    \begin{lstlisting}[basicstyle=\small]
+    \begin{lstlisting}[firstnumber=240]
 | Times (e1, e2, pos) =>
     let val t1 = newName "times_L"
         val t2 = newName "times_R"
@@ -202,13 +202,13 @@ Exp :     NUM                 { Constant (IntVal (#1 $1), #2 $1) }
     we made sure that the boolean operators were defined as having a lower
     precedence than the arithmetic operators, so that an expression like,
 
-    \begin{lstlisting}[basicstyle=\small]
+    \begin{lstlisting}[]
         2 + 4 == 6 || 5 + 8 == 10 && 8 < 10
     \end{lstlisting}
 
     is evaluated like,
 
-    \begin{lstlisting}[basicstyle=\small]
+    \begin{lstlisting}[]
         ((2 + 4) == 6) || (((5 + 8) == 10) && (8 < 10)).
     \end{lstlisting}
 
@@ -223,7 +223,7 @@ Exp :     NUM                 { Constant (IntVal (#1 $1), #2 $1) }
     the left hand side is false (The or implementation can be seen in appendix
     \ref{interpreter_and_and_or}.
 
-    \begin{lstlisting}[basicstyle=\small]
+    \begin{lstlisting}[firstnumber=216]
 | evalExp ( And(e1, e2, pos), vtab, ftab ) =
       let val r1 = evalExp(e1, vtab, ftab)
       in case r1 of
