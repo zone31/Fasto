@@ -83,7 +83,7 @@ numbers=left}
     We created a new rule for the star and division operator that created tokens
     and passed the tokens to the parser.
 
-    \begin{lstlisting}[basicstyle=\small]
+    \begin{lstlisting}[firstnumber=84]
 | `*`   { Parser.TIMES    (getPos lexbuf) }
 | `/`   { Parser.DIVIDE   (getPos lexbuf) }
     \end{lstlisting}
@@ -93,14 +93,14 @@ numbers=left}
     addition and subtraction.  Integer multiplication and division carries two
     integers corresponding to a position in the code.
 
-    \begin{lstlisting}[basicstyle=\small]
+    \begin{lstlisting}[firstnumber=15]
 %token <(int*int)> PLUS MINUS TIMES DIVIDE DEQ EQ LTH BOOLAND BOOLOR NOT NEG
     \end{lstlisting}
 
     We also declare both times and divide as left associative operators with
     greater precedence than addition and subtraction.
 
-    \begin{lstlisting}[basicstyle=\small]
+    \begin{lstlisting}[firstnumber=23]
 %left BOOLOR
 %left BOOLAND
 %left NOT
