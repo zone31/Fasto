@@ -412,11 +412,14 @@ fun keyword (s, pos) =
         \item If so then \texttt{scan(f, e, x)}
     \end{itemize}
 
-    \section{$\lambda$-expressions in SOAC's}
+    \section{Task 3 - $\lambda$-expressions in SOAC's}
+    \subsection{Lexer}    
     We implemented lambda functions in the lexer by creating a keyword
     \texttt{fn} corresponding to a \texttt{LAMBDA} in the parser.  We also
     created a token for the special equals symbols used in lambda expressions
-    (=$>$).  We called this token \texttt{LAMBDAEQ}.  We then implemented lambdas
+    (=$>$).  We called this token \texttt{LAMBDAEQ}. 
+    \subsection{Parser}
+    We then implemented lambdas
     in the parser.  We did this by observing that the \texttt{map} function in
     the parser is defined as,
 
@@ -441,13 +444,19 @@ and FunArg = Lambda of Type * Param list * Exp * pos
 
     We then just took the syntax of a lambda and translated that to a list of
     tokens.  Then we pattern matched on that expression and transfered the
-    values needed by the lambda in Fasto.
+    values needed by the lambda in Fasto. Furthermore, Lambda expressions can also
+    be called without arguments, therefore we need a case where the Params is non
+    existant.
 
-    \begin{lstlisting}[basicstyle=\small]
-FunArg : ID { FunName (#1 $1) }
-     |   LAMBDA Type LPAR Params RPAR LAMBDAEQ Exp { Lambda ($2, $4, $7, $1) }
-    \end{lstlisting}
+\lstinputlisting[
+basicstyle=\footnotesize,
+caption={Lambda in Parser.grm },
+firstnumber=125,
+linerange={125-127},
+numbers=left]
+{../fasto/src/Parser.grm}
 
+\subsection{Interperter}    
     We implemented lambdas in the interpreter by changing the way function
     arguments are evaluated.  We could do this as it is an invariant of the
     Fasto programming language that lambdas can only be used in Second Order
@@ -476,7 +485,32 @@ and evalFunArg (FunName fid, vtab, ftab, callpos) =
     end
     \end{lstlisting}
 
-    \section{Copy propagation and constant folding}
+\subsection{Code generator}
+The code generation of lambda is a bit complex. The easiest way to explain how it works
+is by a list, where each step is followed by the next, in chronological order.
+\begin{enumerate}
+  \item Remove type decleration from paralist.
+  \item Zip the newly generated list with args.
+  \item Generate code that assings input from args to the parameter list.
+  \item Generate the local vTable, that contains the local variables.
+  \item Compile the expression from the lambda, via compileExp. It takes the local vTable,
+  and a register to place its result.
+  \item then we concatinate the code from 3 and 5, and returns this.
+\end{enumerate}
+The source code looks like this
+\lstinputlisting[
+language=ML,
+basicstyle=\footnotesize,
+caption={Lambda in CodeGen.sml },
+firstnumber=848,
+breaklines=true,
+linerange={848-863},
+numbers=left]
+{../fasto/src/CodeGen.sml}
+
+ 
+
+    \section{Task 4 - Copy propagation and constant folding}
 	For our implementation of the optimizations copy propagration and constant
 	folding, we have made additions to \texttt{CopyConstPropFold.sml}, specifically
 	we have added cases for variables, \texttt{let}-bindings, multplication,

@@ -848,22 +848,15 @@ structure CodeGen = struct
   and applyFunArg (FunName s, args, vtable, place, pos) : Mips.Prog =
       let val tmp_reg = newName "tmp_reg"
       in  applyRegs(s, args, tmp_reg, pos) @ [Mips.MOVE(place, tmp_reg)] end
-
     | applyFunArg (Lambda (tp, paralist, exp, _), args, vtable, place, pos) =
       let val lambda = newName "lambda"
-
           val argsparalist = map (fn Param(x,y) => x) paralist (*Removes type decleration*)
-
           val zipped = zipWith (fn (x,y)=>(x,y)) argsparalist args (*Zips the arguments*)
-
           val bind = zipWith Mips.MOVE argsparalist args (*Moves the arguments*)
-
           (*Delcares the local vtable, by binding zipped in a SymTab*)
           val localVtable = foldl(fn ((x,y),acc)=>SymTab.bind x y acc) (SymTab.empty()) zipped
-
           (*compiles the lambda expression with the local v table, and saves res to place*)
           val compiledExp = compileExp exp localVtable place
-
       in []
         @ bind
         @ compiledExp
