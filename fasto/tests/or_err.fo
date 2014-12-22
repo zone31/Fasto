@@ -1,0 +1,2 @@
+fun bool main() =
+    false || false || {'h', 'e', 'j'}

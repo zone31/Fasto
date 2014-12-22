@@ -1,0 +1,2 @@
+fun bool main() =
+    if not 'h' then true else false
