@@ -817,6 +817,8 @@ structure CodeGen = struct
            , Mips.LABEL loop_end ]
         end
 
+    | _ => raise Error ("Unknown pattern in CodeGen", (0, 0))
+
   (* TODO TASK 1: add case for constant booleans (True/False). *)
 
   (* TODO TASK 1: add cases for Times, Divide, Negate, Not, And, Or.  Look at

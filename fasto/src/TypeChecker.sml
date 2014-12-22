@@ -329,6 +329,8 @@ and checkExp ftab vtab (exp : In.Exp)
                               ^ ppType n_type, pos)
          end
 
+     | _ => raise Error ("Unknown pattern in TypeChecker.", (0, 0))
+
   (* TODO TASK 1: add case for constant booleans (True/False). *)
 
   (* TODO TASK 1: add cases for Times, Divide, Negate, Not, And, Or.  Look at
