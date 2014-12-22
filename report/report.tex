@@ -747,10 +747,12 @@ is by a list, where each step is followed by the next, in chronological order.
   \item Generate the local vTable, that contains the local variables.\\
   We now generate a new vTable, that contains the local variables only. We foldl over the zipped
   variable we declared in 2. This creates a SymTab structure witch makes it a valid vtable.
-  \item Compile the expression from the lambda, via compileExp. It takes the local vTable,\\
+ \item Merge local and global vtable\\
+ This makes the expression able to see variables declared outside the scope  
+  \item Compile the expression from the lambda, via compileExp. It takes the merged vtable\\
   We can now compile the expression in the lambda. We have assigned the arguments, and made a
-  local vTable so the function can reassign variables such as x, without affecting the scope
-  outside the function.
+  local vTable so the function can reassign variables such as x, and a global, so to can call
+  other variables than its arguments
   and a register to place its result.
   \item then we concatinate the code from 3 and 5, and returns this as a lambda call.
 \end{enumerate}
@@ -759,13 +761,14 @@ The source code looks like this
 and applyFunArg (FunName s, args, vtable, place, pos) : Mips.Prog =
     let val tmp_reg = newName "tmp_reg"
     in  applyRegs(s, args, tmp_reg, pos) @ [Mips.MOVE(place, tmp_reg)] end
-| applyFunArg (Lambda (tp, paralist, exp, _), args, vtable, place, pos) =
+  | applyFunArg (Lambda (tp, paralist, exp, _), args, vtable, place, pos) =
     let val lambda = newName "lambda"
         val argsparalist = map (fn Param(x,y) => x) paralist
-        val zipped = zipWith (fn (x,y)=>(x,y)) argsparalist args
+        val zipped = zipWith (fn (x,y)=>(x,y)) argsparalist args 
         val bind = zipWith Mips.MOVE argsparalist args
         val localVtable = foldl(fn ((x,y),acc)=>SymTab.bind x y acc) (SymTab.empty()) zipped
-        val compiledExp = compileExp exp localVtable place
+        val combinedVtable = SymTab.combine localVtable vtable
+        val compiledExp = compileExp exp combinedVtable place
     in []
       @ bind
       @ compiledExp
@@ -774,44 +777,22 @@ and applyFunArg (FunName s, args, vtable, place, pos) : Mips.Prog =
 
 
 \subsection{Tests}
+
+
     \begin{tabular}{|l|l|}
         \hline
         \textbf{Test name} & \textbf{Test description}                        \\
         \hline
-        lambda.fo           & Tests boolean operators and their precedence.    \\
+        lambda.fo           & Simple lambda test    \\
         \hline
-        1lambda.fo        & Test if and is properly short circuited.         \\
+        lambda\_innerScope.fo        & The same as simple test, but with a call for a variable outside of scope     \\
         \hline
-        2lambda.fo   & Test boolean literals.                           \\
+        lambda\_nested\_redeclare.fo   & Redeclares already declared values in the outer scope                           \\
         \hline
-        3lambda.fo         & Another test testing if boolean literals.        \\
+        lambda\_nested\_sameName.fo        & No variable conflicts, mo double decelerations       \\
         \hline
-        intNegate.fo       & Test negation of integer values, only test the   \\
-                           & simple case ~number not ~(number).  Operator     \\
-                           & precedence is also tested.                       \\
-        \hline
-        muldivide.fo       & Tests the multiplication and division operators. \\
-        \hline
-        negate2.fo         & Again test simple integer negation.              \\
-        \hline
-        negate.fo          & Test the case where integer negation is followed \\
-                           & by something other than a number.                \\
-        \hline
-        or\_sc.fo          & Test if or is short circuited.                   \\
-        \hline
-        tobeornottobe.fo   & Test precedence of boolean operators.            \\
-        \hline
-        and\_err.fo        & Test a typeerror for and.                        \\
-        \hline
-        div\_err.fo        & Test a typeerror for div.                        \\
-        \hline
-        mul\_err.fo        & Test a typeerror for mul.                        \\
-        \hline
-        neg\_err           & Test a typeerror for negation.                   \\
-        \hline
-        not\_err.fo        & Test a typeerror for not.                        \\
-        \hline
-        or\_err.fo         & Test a typeerror for or.                         \\
+        lambda\_type\_err.fo     & Returns a type error, because lambda function has wrong type  \\
+       
         \hline
     \end{tabular}
 
