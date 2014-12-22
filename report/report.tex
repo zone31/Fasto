@@ -980,4 +980,58 @@ fun int main() =
     0
     \end{lstlisting}
 
+    \subsection{mul\_err.fo}
+    \begin{lstlisting}[basicstyle=\small]
+fun int main() =
+    4 * 'h'
+    \end{lstlisting}
+
+    \subsection{negate2.fo}
+    \begin{lstlisting}[basicstyle=\small]
+fun int main() =
+    let w = write(~2 * 4) in
+    let w = write(2 * 4) in
+    let w = write(~2 - ~2) in
+    let w = write(~5 + 5) in
+        0
+    \end{lstlisting}
+
+    \subsection{negate.fo}
+    \begin{lstlisting}[basicstyle=\small]
+fun bool main() =
+    let x0 =  write(3 / 2 ==  1) in
+    let x1 = write(~3 / 2 == ~2) in
+    let x2 =  write(3 /~2 == ~2) in
+    let x3 = write(~3 /~2 ==  1) in
+    let x4 = write(~(5+5) ==  ~10) in
+    let x5 = write(~(5+5)) in
+    let x5 = write(~(1)) in
+    write(x0 && x1 && x2 && x3 && x4)
+    \end{lstlisting}
+
+    \subsection{neg\_err.fo}
+    \begin{lstlisting}[basicstyle=\small]
+fun int main() =
+    let a = 5 in
+    let b = 'h' in
+    ~a + ~b
+    \end{lstlisting}
+
+    \subsection{not\_err.fo}
+    \begin{lstlisting}[basicstyle=\small]
+fun bool main() =
+    if not 'h' then true else false
+    \end{lstlisting}
+
+    \subsection{or\_err.fo}
+    \begin{lstlisting}[basicstyle=\small]
+fun bool main() =
+    false || false || {'h', 'e', 'j'}
+    \end{lstlisting}
+
+    \subsection{or_sc.fo}
+    \begin{lstlisting}[basicstyle=\small]
+
+    \end{lstlisting}
+
 \end{document}
