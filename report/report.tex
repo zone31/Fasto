@@ -523,13 +523,13 @@ is by a list, where each step is followed by the next, in chronological order.
 \begin{enumerate}
   \item Remove type decleration from paralist.\\
   We remove the type decleration, beacuse it is not nessesary in the compilation state. This
-  prepares us for a relation between the args in the call itself, and the parameters in the 
+  prepares us for a relation between the args in the call itself, and the parameters in the
   lambda.
   \item Zip the newly generated list with args.\\
   This assings the args and the parameters in touples. We use a function called zipWith.
   It takes in 2 lists of 2 different types, and a function. Then it iterates over the 2 lists,
   and uses each element of the input lists in the input. Then the function return is stored in
-  a new list.  
+  a new list.
   \item Generate code that assings input from args to the parameter list.\\
   We call zipWith again, but this time we generate a list of mips instructions. In this case
   move the assigned values into the correct registers, so the expression can use these
@@ -1040,7 +1040,31 @@ fun bool main() =
 
     \subsection{or_sc.fo}
     \begin{lstlisting}[basicstyle=\small]
+fun int main() =
+    let a = {true, true, false, true} in
+        if true || a[100] // Array index out of bounds
+        then 0
+        else 1
+    \end{lstlisting}
 
+    \subsection{tobeornottobe.fo}
+    \begin{lstlisting}[basicstyle=\small]
+fun [char] printbool(bool b) = if b then write("true ") else write("false ")
+
+fun int main() =
+    let to = false in
+    let be = false in
+    let w = printbool(to == be || not to && be == true) in // true
+    let to = false in
+    let be = true in
+    let w = printbool(to == be || not to && be == true) in // true
+    let to = true in
+    let be = false in
+    let w = printbool(to == be || not to && be == true) in // false
+    let to = true in
+    let be = true in
+    let w = printbool(to == be || not to && be == true) in // true
+        0
     \end{lstlisting}
 
 \end{document}
