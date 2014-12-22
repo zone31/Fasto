@@ -872,7 +872,7 @@ and applyFunArg (FunName s, args, vtable, place, pos) : Mips.Prog =
 	\begin{itemize}
 	\item if \texttt{e1'} and \texttt{e2'} are bools, then the result should be
 	\texttt{e1'} \texttt{and} \texttt{e2'}
-	\item otherwise the optimsed result is  \texttt{And (e1', e2', pos)}.
+	\item otherwise the optimized result is  \texttt{And (e1', e2', pos)}.
 	\end{itemize}
 	Based on this, we have implemented the case for logical and, in the following way:
 	\begin{lstlisting}[basicstyle=\small]
@@ -896,7 +896,7 @@ and applyFunArg (FunName s, args, vtable, place, pos) : Mips.Prog =
 	\begin{itemize}
 	\item if \texttt{e1'} is true then return false,
 	\item if \texttt{e1'} is false then return true,
-	\item otherwise the optimsed result is  \texttt{Not (e1', pos)}.
+	\item otherwise the optimized result is  \texttt{Not (e1', pos)}.
 	\end{itemize}
 	Our implementation has been based on these simplification, it is found below:
 	\begin{lstlisting}[basicstyle=\small]
