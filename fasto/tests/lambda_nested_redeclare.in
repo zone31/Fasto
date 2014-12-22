@@ -1,0 +1,4 @@
+fun int main() =
+    let a = 5 in
+    let b = 'h' in
+    ~a + ~b
