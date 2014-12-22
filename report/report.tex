@@ -409,7 +409,32 @@ fun keyword (s, pos) =
     All the test files are included in appendix \ref{task_1_tests}.
 
     \section{Task 2 - Implement \texttt{filter} and \texttt{scan}}
-    \subsection{Typerules}
+    \subsection{Lexer and Parser}
+    \texttt{Filter} and \texttt{scan} is implemented in the lexer simply as
+    keywords.\\
+
+    In the parser \texttt{scan} and \texttt{filter} is implemented as,
+
+    \begin{lstlisting}[basicstyle=\small]
+| FILTER LPAR FunArg COMMA Exp RPAR { Filter ($3, $5, (), $1) }
+| SCAN LPAR FunArg COMMA Exp COMMA Exp RPAR { Scan ($3, $5, $7, (), $1) }
+    \end{lstlisting}
+
+    Where a \texttt{FUNARG} is,
+
+    \begin{lstlisting}[basicstyle=\small]
+FunArg : ID { FunName (#1 $1) }
+     |   LAMBDA Type LPAR Params RPAR LAMBDAEQ Exp { Lambda ($2, $4, $7, $1) }
+     |   LAMBDA Type LPAR RPAR LAMBDAEQ Exp { Lambda ($2, [], $6, $1) }
+    \end{lstlisting}
+
+    This means that \texttt{filter} consist of a keyword filter followed by a
+    left parenthesis, followed by a function argument (either a function name or
+    a lambda), followed by another comma and at last a right parenthesis.  The
+    expression, the function argument and the position is given to
+    \texttt{filter} in the fast language.
+
+    \subsection{Typechecker}
     The typerules for \texttt{filter} and \texttt{scan} have been based on the
     already existing typerules for \texttt{map} and \texttt{reduce}. They are as
     follows: \\
@@ -443,6 +468,148 @@ fun keyword (s, pos) =
     		\end{enumerate}
         \item If so then \texttt{scan(f, e, x)}
     \end{itemize}
+
+    We will here show the implementation of the type rule of filter, the
+    typerule of scan implementation can be seen in appendix
+    \ref{interpreter_scan}.
+
+    \begin{lstlisting}[basicstyle=\small]
+| In.Filter (f, arr_exp, _, pos)
+  => let val (arr_type, arr_exp_dec) = checkExp ftab vtab arr_exp
+         val elem_type =
+           case arr_type of
+               Array t => t
+             | other   => raise Error ("Filter: Argument not an array", pos)
+         val (f', f_res_type, f_arg_type) =
+           case checkFunArg (f, vtab, ftab, pos) of
+               (f', res, [a1]) => (f', res, a1)
+             | (_,  res, args) =>
+               raise Error ("Filter: incompatible function type of "
+                            ^ In.ppFunArg 0 f ^ ":" ^ showFunType (args, res), pos)
+     in if elem_type = f_arg_type andalso f_res_type = Bool
+        then (arr_type,
+              Out.Filter (f', arr_exp_dec, elem_type, pos))
+        else raise Error ("Filter: array element types does not match."
+                          ^ ppType elem_type ^ " instead of "
+                          ^ ppType f_arg_type , pos)
+     end
+    \end{lstlisting}
+
+    It can be seen that the typechecker raises an error if the second argument
+    of filter is not an array or if the function doesn't have the correct type.
+
+    \subsection{Code Generation}
+    In the code generator \texttt{filter} and \texttt{scan} is implemented in
+    two different ways depending on what types is in the array.  A
+    \textit{Fasto} array changes the size of the types depending on if it
+    consists of booleans, chars or integers.  An integer is represented with 4
+    bytes in \textit{Fasto} while a boolean and a char is represented with only
+    one byte. \\
+
+    We will here in detail go through the implementation of \texttt{scan}, the
+    complete Standard ML code generating MIPS assembly for both \texttt{scan}
+    and \texttt{filter} can be found in appendix \ref{code_gen_scan_filter}.
+    The code for scan is put together by,
+
+    \begin{lstlisting}[basicstyle=\small]
+| Scan (farg, acc_exp, arr_exp, tp, pos) =>
+  let val arr_reg   = newName "arr_reg"   (* Address of array given. *)
+
+      (...)
+
+  in arr_code  @ (* Compute input array expr. *)
+     get_size  @ (* Save size of input array to size_reg. *)
+     comp_size @ (* Calculate size of new arr. *)
+     neu_code  @ (* Compute the neutral element. *)
+     dynalloc (new_size, place, tp) @ (* Allocates space for res. *)
+     set_r_w   @ (* Set read and write registers. *)
+     whileinit @ (* While initialization. *)
+     whilecond @ (* Test the while condition. *)
+     whileloop @ (* Code of while. *)
+     while_end   (* While end label. *)
+  end.
+    \end{lstlisting}
+
+    We will go through each part of the resulting list, explaining what each
+    list item consist of.
+
+    \begin{description}
+        \item [arr\_code] Here we simply call the function \texttt{compileExpr}
+            recursively computing the array to run \texttt{scan} over and saving
+            that array to a name, \texttt{arr\_reg}.
+
+        \item [get\_size] Here we save the size of the start array to a name
+            \texttt{size\_reg} by loading the first word from the input array.
+
+        \item [comp\_size] We compute the length of the resulting array by
+            adding one to the size of the old array (space for neutral element).
+            This new size we save to a name \texttt{new\_size}.
+
+        \item [neu\_code] We compute the value of the neutral element by calling
+            the function \texttt{compileExpr} recursively on \texttt{acc\_exp}.
+
+        \item [dynalloc] We call the function \texttt{dynalloc} to allocate
+            space for the resulting array.  A pointer to the allocated space is
+            saved to place, which is where we want to save our result.
+
+        \item [set\_r\_w] Here we initialize the pointers to where to read data
+            from the old array and write data to the resulting array.
+
+            \begin{lstlisting}[basicstyle=\small]
+val set_r_w   = case getElemSize tp of
+                  One  => [ Mips.ADDI (elreadreg, arr_reg, "4")
+                          , Mips.ADDI (elwritreg, place, "5") ]
+                | Four => [ Mips.ADDI (elreadreg, arr_reg, "4")
+                          , Mips.ADDI (elwritreg, place, "8") ]
+            \end{lstlisting}
+
+            The read register is always the address of the start array plus 4
+            bytes as the first word in an array is the length of the array. \\
+
+            The place to write changes with the type of the resulting array, if
+            the size of the type is one byte the first element should be written
+            5 bytes after the start of the array.  The byte at place 4 is the
+            neutral element.  If the size of the type is 4 bytes the first write
+            should be 8 bytes from the start of the array to make space for
+            length and the neutral element.
+
+        \item [whileinit] Here i is set to 0 and the neutral element is placed
+            in the array, either with \texttt{Mips.SB} or \texttt{Mips.SW}
+            depending on the array type.
+
+        \item [whilecond] The while condition is checked.  If i is equal to the
+            size of the start array we jump to \texttt{while\_end}, otherwise
+            we continue computing.
+
+        \item [whileloop] This is the main part of the while loop, here we
+            present only the code for integers, chars and booleans are very
+            similar.
+
+            \begin{lstlisting}[basicstyle=\small]
+val whileloop = case getElemSize tp of
+                | Four => [ Mips.LW (res_reg, elreadreg, "0")
+                          , Mips.LW (tmp_reg, elwritreg, "-4") ]
+                          @ applyFunArg(farg, [tmp_reg, res_reg],
+                                        vtable, res_reg, pos)
+                          @ [ Mips.SW (res_reg, elwritreg, "0")
+                          , Mips.ADDI (elreadreg, elreadreg, "4")
+                          , Mips.ADDI (elwritreg, elwritreg, "4")
+                          , Mips.ADDI (i_reg, i_reg, "1")
+                          , Mips.J startlabl ]
+            \end{lstlisting}
+
+            First we load an integer from the initial array, then we load the
+            previously computed integer by loading a word from the result array
+            with the ofset -4.  Then we apply the function argument to the two
+            loaded values and save the value to \texttt{res\_reg}.  Then we save
+            that value to the resulting array and increment all pointers and
+            counter variables.  Lastly we jump to the while condition again.
+
+        \item [while\_end] While end is simply a label to jump out of the while
+            loop.
+    \end{description}
+
+    \subsection{Test}
 
     \section{Task 3 - $\lambda$-expressions in SOAC's}
     \subsection{Lexer}
@@ -871,7 +1038,7 @@ fun int main() =
 fun evalExp ( Constant (v,_), vtab, ftab ) = v
     \end{lstlisting}
 
-    \subsection{typechecker}
+    \subsection{Typechecker}
     \begin{lstlisting}[basicstyle=\small]
 In.Constant  (v, pos)     => (valueType v, Out.Constant (v, pos))
     \end{lstlisting}
@@ -883,6 +1050,7 @@ In.Constant  (v, pos)     => (valueType v, Out.Constant (v, pos))
                                else [Mips.LI (place, "0")]
     \end{lstlisting}
 
+    \newpage
     \section{Task 1 Tests} \label{task_1_tests}
     \subsection{and\_err.fo}
     \begin{lstlisting}[basicstyle=\small]
@@ -910,7 +1078,7 @@ fun int main() =
         0
     \end{lstlisting}
 
-    \subsection{and_sc.fo}
+    \subsection{and\_sc.fo}
     \begin{lstlisting}[basicstyle=\small]
 fun int main() =
     let a = {true, false, true, true, true, false} in
@@ -1038,7 +1206,7 @@ fun bool main() =
     false || false || {'h', 'e', 'j'}
     \end{lstlisting}
 
-    \subsection{or_sc.fo}
+    \subsection{or\_sc.fo}
     \begin{lstlisting}[basicstyle=\small]
 fun int main() =
     let a = {true, true, false, true} in
@@ -1065,6 +1233,176 @@ fun int main() =
     let be = true in
     let w = printbool(to == be || not to && be == true) in // true
         0
+    \end{lstlisting}
+
+    \newpage
+    \section{Interpreter Scan} \label{interpreter_scan}
+    \begin{lstlisting}[basicstyle=\small]
+| In.Scan (f, n_exp, arr_exp, _, pos)
+  => let val (n_type, n_dec) = checkExp ftab vtab n_exp
+         val (arr_type, arr_dec) = checkExp ftab vtab arr_exp
+         val elem_type =
+           case arr_type of
+               Array t => t
+             | other => raise Error ("Scan: Argument not an array", pos)
+         val (f', f_arg_type) =
+           case checkFunArg (f, vtab, ftab, pos) of
+               (f', res, [a1, a2]) =>
+               if a1 = a2 andalso a2 = res
+               then (f', res)
+               else raise Error
+                      ("Scan: incompatible function type of "
+                       ^ In.ppFunArg 0 f ^": " ^ showFunType ([a1, a2], res), pos)
+             | (_, res, args) =>
+               raise Error ("Scan: incompatible function type of "
+                            ^ In.ppFunArg 0 f ^ ": " ^ showFunType (args, res), pos)
+         fun err (s, t) =
+             Error ("Scan: unexpected " ^ s ^ " type " ^ ppType t ^
+                    ", expected " ^ ppType f_arg_type, pos)
+     in if elem_type = f_arg_type
+        then if elem_type = n_type
+             then (arr_type,
+                   Out.Scan (f', n_dec, arr_dec, elem_type, pos))
+             else raise err ("neutral element", n_type)
+        else raise err ("array element", elem_type)
+     end
+    \end{lstlisting}
+
+    \newpage
+    \section{Code Generation Filter and Scan} \label{code_gen_scan_filter}
+    \begin{lstlisting}[basicstyle=\small]
+| Scan (farg, acc_exp, arr_exp, tp, pos) =>
+  let val arr_reg   = newName "arr_reg"   (* Address of array given. *)
+      val size_reg  = newName "size_reg"  (* Size of original array. *)
+      val i_reg     = newName "i_reg"     (* Counter register. *)
+      val new_size  = newName "new_size"  (* Size of new array. *)
+      val tmp_reg   = newName "tmp_reg"   (* Various uses. *)
+      val res_reg   = newName "res_reg"   (* Various uses. *)
+      val startlabl = newName "startlabl" (* Start label of while loop. *)
+      val endlabl   = newName "endlabl"   (* The end of while loop. *)
+      val neu_el    = newName "neu_el"    (* Neutral element. *)
+      val elreadreg = newName "elreadreg" (* Element to be read. *)
+      val elwritreg = newName "elwritreg" (* Where to write. *)
+
+      val arr_code  = compileExp arr_exp vtable arr_reg
+      val get_size  = [ Mips.LW (size_reg, arr_reg, "0") ]
+      val comp_size = [ Mips.ADDI (new_size, size_reg, "1") ]
+      val neu_code  = compileExp acc_exp vtable neu_el
+
+      val set_r_w   = case getElemSize tp of
+                        One  => [ Mips.ADDI (elreadreg, arr_reg, "4")
+                                , Mips.ADDI (elwritreg, place, "5") ]
+                      | Four => [ Mips.ADDI (elreadreg, arr_reg, "4")
+                                , Mips.ADDI (elwritreg, place, "8") ]
+
+      val whileinit = case getElemSize tp of
+                        One  => [ Mips.LI (i_reg, "0")
+                                , Mips.SB (neu_el, place, "4") ]
+                      | Four => [ Mips.LI (i_reg, "0")
+                                , Mips.SW (neu_el, place, "4") ]
+
+      val whilecond = [ Mips.LABEL startlabl
+                      , Mips.SLT (tmp_reg, i_reg, size_reg)
+                      , Mips.BEQ (tmp_reg, "0", endlabl) ]
+
+      val whileloop = case getElemSize tp of
+                        One  => [ Mips.LB (res_reg, elreadreg, "0")
+                                , Mips.LB (tmp_reg, elwritreg, "-1") ]
+                                @ applyFunArg(farg, [tmp_reg, res_reg],
+                                              vtable, res_reg, pos)
+                                @ [ Mips.SB (res_reg, elwritreg, "0")
+                                , Mips.ADDI (elreadreg, elreadreg, "1")
+                                , Mips.ADDI (elwritreg, elwritreg, "1")
+                                , Mips.ADDI (i_reg, i_reg, "1")
+                                , Mips.J startlabl ]
+                      | Four => [ Mips.LW (res_reg, elreadreg, "0")
+                                , Mips.LW (tmp_reg, elwritreg, "-4") ]
+                                @ applyFunArg(farg, [tmp_reg, res_reg],
+                                              vtable, res_reg, pos)
+                                @ [ Mips.SW (res_reg, elwritreg, "0")
+                                , Mips.ADDI (elreadreg, elreadreg, "4")
+                                , Mips.ADDI (elwritreg, elwritreg, "4")
+                                , Mips.ADDI (i_reg, i_reg, "1")
+                                , Mips.J startlabl ]
+
+      val while_end = [ Mips.LABEL endlabl ]
+
+  in arr_code  @ (* Compute input array expr. *)
+     get_size  @ (* Save size of input array to size_reg. *)
+     comp_size @ (* Calculate size of new arr. *)
+     neu_code  @ (* Compute the neutral element. *)
+     dynalloc (new_size, place, tp) @ (* Allocates space for res. *)
+     set_r_w   @ (* Set read and write registers. *)
+     whileinit @ (* While initialization. *)
+     whilecond @ (* Test the while condition. *)
+     whileloop @ (* Code of while. *)
+     while_end   (* While end label. *)
+  end
+
+| Filter (farg, arr_exp, elem_type, pos) =>
+  let val size_reg = newName "size_reg" (* size of input/output array *)
+      val arr_reg  = newName "arr_reg" (* address of array *)
+      val elem_reg = newName "elem_reg" (* address of single element *)
+      val res_reg = newName "res_reg"
+      val arr_code = compileExp arr_exp vtable arr_reg
+
+      val get_size = [ Mips.LW (size_reg, arr_reg, "0") ]
+
+      val addr_reg = newName "addr_reg" (* address of element in new array *)
+      val i_reg = newName "i_reg" (*amount of progress of iteration in input array*)
+      val j_reg = newName "j_reg" (*Count of true elements in output*)
+      val init_regs = [ Mips.ADDI (addr_reg, place, "4")
+                      , Mips.MOVE (i_reg, "0")
+                      , Mips.MOVE (j_reg, "0")
+                      , Mips.ADDI (elem_reg, arr_reg, "4") ]
+
+      val loop_beg = newName "loop_beg"
+      val loop_end = newName "loop_end"
+      val value_reg = newName "value_reg"
+      val false_= newName "false_"
+      val tmp_reg = newName "tmp_reg"
+      val loop_header = [ Mips.LABEL (loop_beg)
+                        , Mips.SUB (tmp_reg, i_reg, size_reg)
+                        , Mips.BGEZ (tmp_reg, loop_end) ]
+
+      (* map is 'arr[i] = f(old_arr[i])'. *)
+      val loop_filter0 =
+          case getElemSize elem_type of
+              One => Mips.LB(res_reg, elem_reg, "0")
+                     :: applyFunArg(farg, [res_reg], vtable, res_reg, pos)
+            | Four => Mips.LW(res_reg, elem_reg, "0")
+                      :: applyFunArg(farg, [res_reg], vtable, res_reg, pos)
+
+      val loop_filter1 =
+          case getElemSize elem_type of
+              One =>  [  Mips.BEQ(res_reg, "0" ,false_)
+                       , Mips.LB (value_reg, elem_reg, "0")
+                       , Mips.SB (value_reg, addr_reg, "0")]
+            | Four => [  Mips.BEQ(res_reg, "0" ,false_)
+                       , Mips.LW (value_reg, elem_reg, "0")
+                       , Mips.SW (value_reg, addr_reg, "0")]
+
+      val loop_footer =
+          [ Mips.ADDI (addr_reg, addr_reg,
+                       makeConst (elemSizeToInt (getElemSize elem_type)))
+          , Mips.ADDI (j_reg, j_reg, "1")
+          , Mips.LABEL false_
+          , Mips.ADDI(elem_reg, elem_reg,
+                       makeConst (elemSizeToInt (getElemSize elem_type)))
+          , Mips.ADDI (i_reg, i_reg, "1")
+          , Mips.J loop_beg
+          , Mips.LABEL loop_end
+          , Mips.SW (j_reg, place, "0")
+          ]
+  in arr_code
+     @ get_size
+     @ dynalloc (size_reg, place, elem_type)
+     @ init_regs
+     @ loop_header
+     @ loop_filter0
+     @ loop_filter1
+     @ loop_footer
+  end
     \end{lstlisting}
 
 \end{document}
