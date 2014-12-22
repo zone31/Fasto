@@ -3,6 +3,6 @@ fun int writeInt(int x) = write(x)
 fun int main() =
     let y = 2 in
     let a = {9,8,7,6,5,4,3,2,1} in //45 + 18 = 63
-    let b = reduce(fn int (int a, int b) => a + b + 2, 0, a) in
+    let b = reduce(fn int (int a, int b) => a + b + y, 0, a) in
     writeInt(b)
 

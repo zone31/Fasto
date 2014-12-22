@@ -1,0 +1,8 @@
+fun int main() =
+let a = 4/2 in
+let b = 4*4 in
+let c = a * b in
+let d = (b * b) / a in
+let e = ~(2-5) in
+let f = (e / a) * b in
+a

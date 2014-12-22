@@ -1,0 +1,7 @@
+fun bool main() =
+let a =
+	let x = true in
+	let y =  not x in
+	let z = x && y in
+	z || y
+in a
