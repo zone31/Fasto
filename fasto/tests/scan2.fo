@@ -1,0 +1,11 @@
+fun int writeInts([int] arr) =
+    let w = map(fn int (int i) => write(i), arr) in
+        0
+
+fun int main() =
+    let a = {'1', '0', '1', '1', '1', '0'} in
+    let i = scan(fn int (int acc, char c) => if c == '1' then
+                                             acc + 1     else
+                                             acc, 0, a) in
+
+        writeInts(i)

@@ -1,0 +1,12 @@
+fun [bool] writeBools([bool] arr) =
+    map(fn bool (bool b) => write(b), arr)
+
+fun bool and(bool a, bool b) = a && b
+
+fun int main() =
+    let a = {true, false, false, true, false} in
+    let b = {true, true, true, true, false, true} in
+    let w = writeBools(scan(and, true, a)) in
+    let w = writeBools(scan(and, true, b)) in
+
+        0
